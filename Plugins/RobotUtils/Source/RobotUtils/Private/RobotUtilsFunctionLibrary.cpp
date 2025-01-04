@@ -6,6 +6,7 @@
 #include "RobotUtilsKDL.h"
 #include "DrawDebugHelpers.h"
 #include "RobotJointComponent.h"
+#include "Algo/Reverse.h"
 
 bool URobotUtilsFunctionLibrary::GetJointRotation(const FRobotJoint& Joint, const FRobotJointArray& JointArray, int32 Index, FRotator& OutRotator)
 {
@@ -29,11 +30,19 @@ bool URobotUtilsFunctionLibrary::MakeChainFromComponents(USceneComponent* ChainB
 
 	TArray<USceneComponent*> Chain;
 
-	for (USceneComponent* CurrentSegment = ChainTip; CurrentSegment != nullptr && CurrentSegment != ChainBase;)
 	{
-		Chain.Push(CurrentSegment);
+		USceneComponent* CurrentSegment = ChainTip;
+		while (CurrentSegment != nullptr && CurrentSegment != ChainBase)
+		{
+			Chain.Push(CurrentSegment);
 
-		CurrentSegment = CurrentSegment->GetAttachParent();
+			CurrentSegment = CurrentSegment->GetAttachParent();
+		}
+
+		if (CurrentSegment == ChainBase && ChainBase != nullptr)
+		{
+			Chain.Push(CurrentSegment);
+		}
 	}
 
 	if (Chain.Num() < 2)
@@ -42,10 +51,13 @@ bool URobotUtilsFunctionLibrary::MakeChainFromComponents(USceneComponent* ChainB
 		return false;
 	}
 
+	// The component hierarchy was walked from child to parent so reverse it
+	Algo::Reverse(Chain);
+
 	OutChain = FRobotChain();
 
 	// Walk the chain in reverse and turn it into a FRobotChain
-	for (int32 i = Chain.Num() - 1; i >= 1; --i)
+	for (int32 i = 0; i < Chain.Num() - 1; ++i)
 	{
 		USceneComponent* CurrentSegment = Chain[i];
 		ERobotJointType CurrentSegmentJoint = ERobotJointType::None;
@@ -58,7 +70,7 @@ bool URobotUtilsFunctionLibrary::MakeChainFromComponents(USceneComponent* ChainB
 		NewSegment.Name = CurrentSegment->GetName();
 		NewSegment.Joint.Name = "Joint: " + CurrentSegment->GetName();
 		NewSegment.Joint.Type = CurrentSegmentJoint;
-		NewSegment.Tip = Chain[i - 1]->GetRelativeTransform();
+		NewSegment.Tip = Chain[i + 1]->GetRelativeTransform();
 
 		OutChain.Segments.Add(NewSegment);
 	}
@@ -121,10 +133,13 @@ TArray<FRotator> URobotUtilsFunctionLibrary::GetJointRotations(const FRobotChain
 	TArray<FRotator> Rotations;
 	KDL::Chain chain;
 	Chain.MakeKDLChain(chain);
-	for (unsigned int i = 0; i < chain.getNrOfJoints(); ++i)
+
+	TArray<FRobotJoint> Joints = GetJointsFromChain(Chain, false);
+
+	for (int32 i = 0; i < Joints.Num(); ++i)
 	{
 		FRotator JointRot;
-		FRobotJoint Joint = FRobotJoint::FromKDLJoint(chain.segments[i].getJoint());
+		FRobotJoint Joint = Joints[i];
 		check(GetJointRotation(Joint, JointArray, i, JointRot));
 
 		Rotations.Add(JointRot);
@@ -178,4 +193,19 @@ void URobotUtilsFunctionLibrary::VectorToKDLVector(const FVector& Vector, KDL::V
 FVector URobotUtilsFunctionLibrary::KDLVectorToVector(const KDL::Vector& Vector)
 {
 	return FVector(Vector.x(), Vector.y(), Vector.z());
+}
+
+TArray<FRobotJoint> URobotUtilsFunctionLibrary::GetJointsFromChain(const FRobotChain& Chain, bool bIncludeFixed)
+{
+	TArray<FRobotJoint> Joints;
+	for (const FRobotSegment& Segment : Chain.Segments)
+	{
+		if (!bIncludeFixed && Segment.Joint.Type == ERobotJointType::Fixed)
+		{
+			continue;
+		}
+
+		Joints.Add(Segment.Joint);
+	}
+	return Joints;
 }

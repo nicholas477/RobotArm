@@ -74,4 +74,7 @@ public:
 
 	static void VectorToKDLVector(const FVector& Vector, KDL::Vector& OutVector);
 	static FVector KDLVectorToVector(const KDL::Vector& Vector);
+
+	UFUNCTION(BlueprintPure, Category = "Robot Utils|Chain")
+	static TArray<FRobotJoint> GetJointsFromChain(const FRobotChain& Chain, bool bIncludeFixed = false);
 };
