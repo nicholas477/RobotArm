@@ -4,7 +4,6 @@
 
 #include "RobotUtils.h"
 
-PRAGMA_DEFAULT_VISIBILITY_START
 THIRD_PARTY_INCLUDES_START
 #undef  PI
 #include <kdl/chain.hpp> 
@@ -18,4 +17,3 @@ THIRD_PARTY_INCLUDES_START
 #include <kdl/frames.hpp>
 #define PI UE_PI
 THIRD_PARTY_INCLUDES_END
-PRAGMA_DEFAULT_VISIBILITY_END

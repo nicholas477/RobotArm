@@ -6,6 +6,7 @@
 #include "Components/PrimitiveComponent.h"
 #include "RobotUtilsTypes.h"
 #include "DynamicMeshBuilder.h"
+#include "RobotUtilsFunctionLibrary.h"
 #include "RobotJointComponent.generated.h"
 
 
@@ -37,6 +38,32 @@ public:
 
 	UPROPERTY(Transient)
 	FTransform StartingRelativeTransform;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Joint Component", meta = (Units = "Degrees"))
+	float RotationInterpSpeed;
+
+	UPROPERTY(Transient, BlueprintReadOnly, VisibleAnywhere, Category = "Joint Component", meta = (Units = "Degrees"))
+	float Rotation;
+
+	UPROPERTY(Transient, BlueprintReadOnly, VisibleAnywhere, Category = "Joint Component", meta = (Units = "Degrees"))
+	float TargetRotation;
+
+	UFUNCTION(BlueprintCallable, Category = "Joint Component")
+	bool MakeChain(USceneComponent* ChainTip, FRobotChain& OutChain, TArray<USceneComponent*>& OutJoints) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Joint Component")
+	bool GetJointRotations(USceneComponent* ChainTip, FRobotJointArray& Rotations) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Joint Component")
+	bool ApplyJointRotations(USceneComponent* ChainTip, const FRobotJointArray& Rotations);
+
+	UFUNCTION(BlueprintCallable, Category = "Joint Component")
+	bool SolveIK(const FSolveIKOptions& Options, const FRobotChain& Chain, TArray<USceneComponent*> Joints, const FTransform& DesiredEffectorTransform, FSolveIKResult& Result, bool bApplyIK);
+
+	UFUNCTION(BlueprintCallable, Category = "Joint Component")
+	virtual void SetTargetRotation(float InTargetRotation);
+
+	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	//~ Begin UPrimitiveComponent Interface.
 	virtual FPrimitiveSceneProxy* CreateSceneProxy() override;

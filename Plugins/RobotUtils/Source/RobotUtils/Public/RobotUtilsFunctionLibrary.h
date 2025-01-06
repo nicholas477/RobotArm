@@ -21,6 +21,10 @@ struct FSolveIKOptions
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot|IK Options")
 	double VelocityEpsilon = 0.01;
+
+	// Read the rotation limits from the joints and limit the IK rotations
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot|IK Options")
+	bool bLimitJoints = true;
 };
 
 USTRUCT(BlueprintType)
@@ -55,7 +59,7 @@ public:
 	static bool GetJointRotation(const FRobotJoint& Joint, const FRobotJointArray& JointArray, int32 Index, FRotator& OutRotator);
 
 	UFUNCTION(BlueprintPure, Category = "Robot Utils|Chain")
-	static bool MakeChainFromComponents(USceneComponent* ChainBase, USceneComponent* ChainTip, FRobotChain& OutChain);
+	static bool MakeChainFromComponents(const USceneComponent* ChainBase, USceneComponent* ChainTip, FRobotChain& OutChain, TArray<USceneComponent*>& OutJoints);
 
 	UFUNCTION(BlueprintCallable, Category = "Robot Utils|Chain", meta=(WorldContext = "WorldContextObject"))
 	static void DebugDrawChain(const UObject* WorldContextObject, const FTransform& ChainWorldTransform, const FRobotChain& Chain);
@@ -77,4 +81,7 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Robot Utils|Chain")
 	static TArray<FRobotJoint> GetJointsFromChain(const FRobotChain& Chain, bool bIncludeFixed = false);
+
+	UFUNCTION(BlueprintPure, Category = "Robot Utils|Chain")
+	static void GetJointLimitsFromChain(const FRobotChain& Chain, FRobotJointArray& OutMin, FRobotJointArray& OutMax);
 };

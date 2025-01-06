@@ -20,7 +20,7 @@ bool URobotUtilsFunctionLibrary::GetJointRotation(const FRobotJoint& Joint, cons
 	return true;
 }
 
-bool URobotUtilsFunctionLibrary::MakeChainFromComponents(USceneComponent* ChainBase, USceneComponent* ChainTip, FRobotChain& OutChain)
+bool URobotUtilsFunctionLibrary::MakeChainFromComponents(const USceneComponent* ChainBase, USceneComponent* ChainTip, FRobotChain& OutChain, TArray<USceneComponent*>& OutJoints)
 {
 	if (ChainTip == nullptr)
 	{
@@ -28,49 +28,51 @@ bool URobotUtilsFunctionLibrary::MakeChainFromComponents(USceneComponent* ChainB
 		return false;
 	}
 
-	TArray<USceneComponent*> Chain;
+	OutJoints.Empty();
 
 	{
 		USceneComponent* CurrentSegment = ChainTip;
 		while (CurrentSegment != nullptr && CurrentSegment != ChainBase)
 		{
-			Chain.Push(CurrentSegment);
+			OutJoints.Push(CurrentSegment);
 
 			CurrentSegment = CurrentSegment->GetAttachParent();
 		}
 
 		if (CurrentSegment == ChainBase && ChainBase != nullptr)
 		{
-			Chain.Push(CurrentSegment);
+			OutJoints.Push(CurrentSegment);
 		}
 	}
 
-	if (Chain.Num() < 2)
+	if (OutJoints.Num() < 2)
 	{
 		UE_LOG(LogRobotUtils, Warning, TEXT("Did not find more than 2 components in chain"));
 		return false;
 	}
 
 	// The component hierarchy was walked from child to parent so reverse it
-	Algo::Reverse(Chain);
+	Algo::Reverse(OutJoints);
 
 	OutChain = FRobotChain();
 
 	// Walk the chain in reverse and turn it into a FRobotChain
-	for (int32 i = 0; i < Chain.Num() - 1; ++i)
+	for (int32 i = 0; i < OutJoints.Num() - 1; ++i)
 	{
-		USceneComponent* CurrentSegment = Chain[i];
-		ERobotJointType CurrentSegmentJoint = ERobotJointType::None;
-		if (URobotJointComponent* JointComponent = Cast<URobotJointComponent>(CurrentSegment))
-		{
-			CurrentSegmentJoint = JointComponent->Joint.Type;
-		}
+		USceneComponent* CurrentSegment = OutJoints[i];
 
 		FRobotSegment NewSegment;
 		NewSegment.Name = CurrentSegment->GetName();
-		NewSegment.Joint.Name = "Joint: " + CurrentSegment->GetName();
-		NewSegment.Joint.Type = CurrentSegmentJoint;
-		NewSegment.Tip = Chain[i + 1]->GetRelativeTransform();
+		if (URobotJointComponent* JointComponent = Cast<URobotJointComponent>(CurrentSegment))
+		{
+			NewSegment.Joint = JointComponent->Joint;
+		}
+		else
+		{
+			NewSegment.Joint.Name = "Joint: " + CurrentSegment->GetName();
+			NewSegment.Joint.Type = ERobotJointType::Fixed;
+		}
+		NewSegment.Tip = OutJoints[i + 1]->GetRelativeTransform();
 
 		OutChain.Segments.Add(NewSegment);
 	}
@@ -107,25 +109,58 @@ bool URobotUtilsFunctionLibrary::SolveIK(const FSolveIKOptions& Options, const F
 
 	KDL::ChainFkSolverPos_recursive pos_solver(chain);
 	KDL::ChainIkSolverVel_pinv vel_solver(chain, Options.VelocityEpsilon);
-	KDL::ChainIkSolverPos_NR ik_solver(chain, pos_solver, vel_solver, Options.MaxIterations, Options.PositionEpsilon);
-
-	KDL::JntArray q_init(chain.getNrOfJoints());
-	KDL::JntArray solution(chain.getNrOfJoints());
-	KDL::Frame desired_pose;
-	TransformToKDLFrame(DesiredEffectorTransform, desired_pose);
-
-	Result.Result = ik_solver.CartToJnt(q_init, desired_pose, solution);
-	Result.JointArray = FRobotJointArray::FromKDLJntArray(solution);
-	Result.ErrorString = UTF8_TO_TCHAR(ik_solver.strError(Result.Result));
-
-	if (Result.Result >= 0)
+	
+	if (Options.bLimitJoints)
 	{
-		Result.bWasSuccessful = true;
-		return true;
-	}
+		FRobotJointArray MinRotationLimit, MaxRotationLimit;
+		GetJointLimitsFromChain(Chain, MinRotationLimit, MaxRotationLimit);
 
-	Result.bWasSuccessful = false;
-	return false;
+		KDL::JntArray KDLMinRotationLimit, KDLMaxRotationLimit;
+		MinRotationLimit.MakeKDLJointArray(KDLMinRotationLimit);
+		MaxRotationLimit.MakeKDLJointArray(KDLMaxRotationLimit);
+
+		KDL::ChainIkSolverPos_NR_JL ik_solver(chain, KDLMinRotationLimit, KDLMaxRotationLimit, pos_solver, vel_solver, Options.MaxIterations, Options.PositionEpsilon);
+
+		KDL::JntArray q_init(chain.getNrOfJoints());
+		KDL::JntArray solution(chain.getNrOfJoints());
+		KDL::Frame desired_pose;
+		TransformToKDLFrame(DesiredEffectorTransform, desired_pose);
+
+		Result.Result = ik_solver.CartToJnt(q_init, desired_pose, solution);
+		Result.JointArray = FRobotJointArray::FromKDLJntArray(solution);
+		Result.ErrorString = UTF8_TO_TCHAR(ik_solver.strError(Result.Result));
+
+		if (Result.Result >= 0)
+		{
+			Result.bWasSuccessful = true;
+			return true;
+		}
+
+		Result.bWasSuccessful = false;
+		return false;
+	}
+	else
+	{
+		KDL::ChainIkSolverPos_NR ik_solver(chain, pos_solver, vel_solver, Options.MaxIterations, Options.PositionEpsilon);
+
+		KDL::JntArray q_init(chain.getNrOfJoints());
+		KDL::JntArray solution(chain.getNrOfJoints());
+		KDL::Frame desired_pose;
+		TransformToKDLFrame(DesiredEffectorTransform, desired_pose);
+
+		Result.Result = ik_solver.CartToJnt(q_init, desired_pose, solution);
+		Result.JointArray = FRobotJointArray::FromKDLJntArray(solution);
+		Result.ErrorString = UTF8_TO_TCHAR(ik_solver.strError(Result.Result));
+
+		if (Result.Result >= 0)
+		{
+			Result.bWasSuccessful = true;
+			return true;
+		}
+
+		Result.bWasSuccessful = false;
+		return false;
+	}
 }
 
 TArray<FRotator> URobotUtilsFunctionLibrary::GetJointRotations(const FRobotChain& Chain, const FRobotJointArray& JointArray)
@@ -140,7 +175,8 @@ TArray<FRotator> URobotUtilsFunctionLibrary::GetJointRotations(const FRobotChain
 	{
 		FRotator JointRot;
 		FRobotJoint Joint = Joints[i];
-		check(GetJointRotation(Joint, JointArray, i, JointRot));
+		bool Res = GetJointRotation(Joint, JointArray, i, JointRot);
+		check(Res != false);
 
 		Rotations.Add(JointRot);
 	}
@@ -208,4 +244,19 @@ TArray<FRobotJoint> URobotUtilsFunctionLibrary::GetJointsFromChain(const FRobotC
 		Joints.Add(Segment.Joint);
 	}
 	return Joints;
+}
+
+void URobotUtilsFunctionLibrary::GetJointLimitsFromChain(const FRobotChain& Chain, FRobotJointArray& OutMin, FRobotJointArray& OutMax)
+{
+	OutMin.Rotations.Reset();
+	OutMax.Rotations.Reset();
+
+	for (const FRobotSegment& Segment : Chain.Segments)
+	{
+		if (Segment.Joint.Type != ERobotJointType::Fixed)
+		{
+			OutMin.Rotations.Add(-FMath::DegreesToRadians(Segment.Joint.MinJointLimit));
+			OutMax.Rotations.Add(FMath::DegreesToRadians(Segment.Joint.MaxJointLimit));
+		}
+	}
 }

@@ -14,8 +14,11 @@ URobotJointComponent::URobotJointComponent(const FObjectInitializer& ObjectIniti
 	DrawJoint = false;
 	DrawSize = 16.f;
 	DrawOffset.SetLocation(FVector(0.1f, 0.f, 0.f));
+	Rotation = 0.f;
+	RotationInterpSpeed = 50.f;
 
 	bWantsInitializeComponent = true;
+	PrimaryComponentTick.bCanEverTick = true;
 }
 
 void URobotJointComponent::InitializeComponent()
@@ -23,6 +26,130 @@ void URobotJointComponent::InitializeComponent()
 	Super::InitializeComponent();
 
 	StartingRelativeTransform = GetRelativeTransform();
+}
+
+bool URobotJointComponent::MakeChain(USceneComponent* ChainTip, FRobotChain& OutChain, TArray<USceneComponent*>& OutJoints) const
+{
+	return URobotUtilsFunctionLibrary::MakeChainFromComponents(this, ChainTip, OutChain, OutJoints);
+}
+
+bool URobotJointComponent::GetJointRotations(USceneComponent* ChainTip, FRobotJointArray& Rotations) const
+{
+	Rotations.Rotations.Empty();
+	TArray<USceneComponent*> Joints;
+	FRobotChain Chain;
+
+	if (MakeChain(ChainTip, Chain, Joints) == false)
+	{
+		return false;
+	}
+
+	for (USceneComponent* JointComponent : Joints)
+	{
+		if (URobotJointComponent* JointJointComponent = Cast<URobotJointComponent>(JointComponent))
+		{
+			if (JointJointComponent->Joint.Type == ERobotJointType::Fixed)
+			{
+				continue;
+			}
+
+			Rotations.Rotations.Add(FMath::DegreesToRadians(JointJointComponent->TargetRotation));
+		}
+	}
+
+	return true;
+}
+
+bool URobotJointComponent::ApplyJointRotations(USceneComponent* ChainTip, const FRobotJointArray& Rotations)
+{
+	TArray<USceneComponent*> Joints;
+	FRobotChain Chain;
+
+	if (MakeChain(ChainTip, Chain, Joints) == false)
+	{
+		return false;
+	}
+
+	int32 i = 0;
+	for (USceneComponent* JointComponent : Joints)
+	{
+		if (URobotJointComponent* JointJointComponent = Cast<URobotJointComponent>(JointComponent))
+		{
+			if (JointJointComponent->Joint.Type == ERobotJointType::Fixed)
+			{
+				continue;
+			}
+
+			check(Rotations.Rotations.IsValidIndex(i));
+
+			JointJointComponent->SetTargetRotation(FMath::RadiansToDegrees(Rotations.Rotations[i]));
+			i++;
+		}
+	}
+
+	return true;
+}
+
+bool URobotJointComponent::SolveIK(const FSolveIKOptions& Options, const FRobotChain& Chain, TArray<USceneComponent*> Joints, const FTransform& DesiredEffectorTransform, FSolveIKResult& Result, bool bApplyIK)
+{
+	if (URobotUtilsFunctionLibrary::SolveIK(Options, Chain, DesiredEffectorTransform, Result) == false)
+	{
+		return false;
+	}
+
+	if (bApplyIK)
+	{
+		Joints.RemoveAll([](USceneComponent* Component)
+		{
+			URobotJointComponent* JointComponent = Cast<URobotJointComponent>(Component);
+			if (JointComponent)
+			{
+				return JointComponent->Joint.Type == ERobotJointType::Fixed;
+			}
+			else
+			{
+				return true;
+			}
+		});
+
+		TArray<FRotator> JointRotations = URobotUtilsFunctionLibrary::GetJointRotations(Chain, Result.JointArray);
+		for (int32 i = 0; i < JointRotations.Num(); ++i)
+		{
+			USceneComponent* JointComponent = Joints[i];
+			//JointComponent->SetRelativeRotation(JointRotations[i]);
+
+			if (URobotJointComponent* CastedJointComponent = Cast<URobotJointComponent>(JointComponent))
+			{
+				CastedJointComponent->SetTargetRotation(FMath::RadiansToDegrees(Result.JointArray.Rotations[i]));
+			}
+		}
+	}
+
+	return true;
+}
+
+void URobotJointComponent::SetTargetRotation(float InTargetRotation)
+{
+	TargetRotation = InTargetRotation;
+}
+
+void URobotJointComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	if (!FMath::IsNearlyEqual(Rotation, TargetRotation, 0.01f))
+	{
+		float NewRotationDelta = (FMath::FInterpTo(Rotation, TargetRotation, DeltaTime, RotationInterpSpeed) - Rotation) / DeltaTime;
+
+		NewRotationDelta = FMath::Clamp(NewRotationDelta, -Joint.MaxSpeed, Joint.MaxSpeed) * DeltaTime;
+		Rotation += NewRotationDelta;
+		
+		// Now update the relative rotation
+		const FVector Axis = URobotUtilsFunctionLibrary::GetJointTypeAxis(Joint.Type);
+		const FQuat NewJointRotation = FQuat(Axis, FMath::DegreesToRadians(Rotation));
+
+		SetRelativeRotation(NewJointRotation);
+	}
 }
 
 FPrimitiveSceneProxy* URobotJointComponent::CreateSceneProxy()
