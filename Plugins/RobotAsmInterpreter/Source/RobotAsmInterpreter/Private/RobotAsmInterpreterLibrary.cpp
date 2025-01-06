@@ -5,6 +5,8 @@
 
 #include "RobotAsmSettings.h"
 #include "RobotAsmCommandFinishListener.h"
+#include "Commands/LabelCommand.h"
+#include "Commands/GotoCommand.h"
 #include "Containers/UnrealString.h"
 
 UE_DISABLE_OPTIMIZATION
@@ -31,6 +33,10 @@ bool URobotAsmInterpreterLibrary::InterpretCode(const UObject* WorldContextObjec
 			if (Words.Num() >= 1)
 			{
 				TSubclassOf<UObject> CommandClass = URobotAsmSettings::GetCommand(Words[0]);
+				if (CommandClass == nullptr)
+				{
+					continue;
+				}
 				UObject* NewCommand = NewObject<UObject>(GetTransientPackage(), CommandClass);
 
 				IRobotAsmCommandInterface::Execute_SetCommandWorld(NewCommand, World);
@@ -74,7 +80,29 @@ void URobotAsmInterpreterLibrary::RunCommandList_Index(const TArray<UObject*>& C
 
 	if (IsValid(Command) && Command->GetClass()->ImplementsInterface(URobotAsmCommandInterface::StaticClass()))
 	{
+		if (Command->GetWorld() == nullptr || Command->GetWorld()->bIsTearingDown)
+		{
+			OnFinish.ExecuteIfBound();
+			return;
+		}
 
+		// GOTO command is a special case
+		if (UGotoCommand* GotoCommand = Cast<UGotoCommand>(Command))
+		{
+			const FString& LabelName = GotoCommand->LabelName;
+			int32 LabelIndex;
+			if (FindLabelIndex(CommandList, LabelName, LabelIndex))
+			{
+				RunCommandList_Index(CommandList, OnFinish, LabelIndex);
+			}
+			else
+			{
+				// If we couldn't find a label then just skip this command
+				RunCommandList_Index(CommandList, OnFinish, CommandIndex + 1);
+			}
+			return;
+		}
+		
 		URobotAsmCommandFinishListener* CommandFinishListener = NewObject<URobotAsmCommandFinishListener>();
 		CommandFinishListener->AddToRoot();
 
@@ -86,7 +114,24 @@ void URobotAsmInterpreterLibrary::RunCommandList_Index(const TArray<UObject*>& C
 		FOnCommandFinish OnCommandFinish;
 		OnCommandFinish.BindUFunction(CommandFinishListener, OnCommandFinishFunctionName);
 
+		UE_LOG(LogTemp, Warning, TEXT("Running command: Index: %d, Name: %s"), CommandIndex, *Command->GetName());
 		IRobotAsmCommandInterface::Execute_RunCommand(Command, CommandList, OnCommandFinish);
 	}
+}
+
+bool URobotAsmInterpreterLibrary::FindLabelIndex(const TArray<UObject*>& CommandList, const FString& Label, int32& OutIndex)
+{
+	for (OutIndex = 0; OutIndex < CommandList.Num(); ++OutIndex)
+	{
+		const UObject* Command = CommandList[OutIndex];
+		if (const ULabelCommand* LabelCommand = Cast<const ULabelCommand>(Command))
+		{
+			if (LabelCommand->LabelName == Label)
+			{
+				return true;
+			}
+		}
+	}
+	return false;
 }
 UE_ENABLE_OPTIMIZATION

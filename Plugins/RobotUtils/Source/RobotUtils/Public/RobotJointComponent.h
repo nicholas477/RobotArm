@@ -48,6 +48,10 @@ public:
 	UPROPERTY(Transient, BlueprintReadOnly, VisibleAnywhere, Category = "Joint Component", meta = (Units = "Degrees"))
 	float TargetRotation;
 
+	// How close Rotation is to TargetRotation when this joint decides to stop rotating
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Joint Component", meta = (Units = "Degrees"))
+	float RotationStopThreshold;
+
 	UFUNCTION(BlueprintCallable, Category = "Joint Component")
 	bool MakeChain(USceneComponent* ChainTip, FRobotChain& OutChain, TArray<USceneComponent*>& OutJoints) const;
 
@@ -62,6 +66,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Joint Component")
 	virtual void SetTargetRotation(float InTargetRotation);
+
+	// Returns true if Rotation is within TargetRotation by +/-RotationStopThreshold degrees
+	UFUNCTION(BlueprintPure, Category = "Joint Component")
+	bool IsWithinRotationThreshold() const;
 
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 

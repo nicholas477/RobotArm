@@ -16,6 +16,7 @@ URobotJointComponent::URobotJointComponent(const FObjectInitializer& ObjectIniti
 	DrawOffset.SetLocation(FVector(0.1f, 0.f, 0.f));
 	Rotation = 0.f;
 	RotationInterpSpeed = 50.f;
+	RotationStopThreshold = 0.1f;
 
 	bWantsInitializeComponent = true;
 	PrimaryComponentTick.bCanEverTick = true;
@@ -116,7 +117,6 @@ bool URobotJointComponent::SolveIK(const FSolveIKOptions& Options, const FRobotC
 		for (int32 i = 0; i < JointRotations.Num(); ++i)
 		{
 			USceneComponent* JointComponent = Joints[i];
-			//JointComponent->SetRelativeRotation(JointRotations[i]);
 
 			if (URobotJointComponent* CastedJointComponent = Cast<URobotJointComponent>(JointComponent))
 			{
@@ -133,11 +133,16 @@ void URobotJointComponent::SetTargetRotation(float InTargetRotation)
 	TargetRotation = InTargetRotation;
 }
 
+bool URobotJointComponent::IsWithinRotationThreshold() const
+{
+	return FMath::IsNearlyEqual(Rotation, TargetRotation, RotationStopThreshold);
+}
+
 void URobotJointComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	if (!FMath::IsNearlyEqual(Rotation, TargetRotation, 0.01f))
+	if (!IsWithinRotationThreshold())
 	{
 		float NewRotationDelta = (FMath::FInterpTo(Rotation, TargetRotation, DeltaTime, RotationInterpSpeed) - Rotation) / DeltaTime;
 
