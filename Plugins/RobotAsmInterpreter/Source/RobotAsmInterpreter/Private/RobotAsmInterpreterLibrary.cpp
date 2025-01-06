@@ -7,6 +7,7 @@
 #include "RobotAsmCommandFinishListener.h"
 #include "Containers/UnrealString.h"
 
+UE_DISABLE_OPTIMIZATION
 bool URobotAsmInterpreterLibrary::InterpretCode(const UObject* WorldContextObject, const FString& Code, FString& OutErrorString, TArray<UObject*>& OutCommands)
 {
 	if (UWorld* World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull))
@@ -18,7 +19,11 @@ bool URobotAsmInterpreterLibrary::InterpretCode(const UObject* WorldContextObjec
 
 		for (FString& Line : Lines)
 		{
+			bool b;
+			Line.TrimCharInline('\r', &b);
+			Line.TrimCharInline('\n', &b);
 			Line.ToLowerInline();
+
 
 			TArray<FString> Words;
 			Line.ParseIntoArray(Words, TEXT(" "));
@@ -26,7 +31,7 @@ bool URobotAsmInterpreterLibrary::InterpretCode(const UObject* WorldContextObjec
 			if (Words.Num() >= 1)
 			{
 				TSubclassOf<UObject> CommandClass = URobotAsmSettings::GetCommand(Words[0]);
-				UObject* NewCommand = NewObject<UObject>(CommandClass);
+				UObject* NewCommand = NewObject<UObject>(GetTransientPackage(), CommandClass);
 
 				IRobotAsmCommandInterface::Execute_SetCommandWorld(NewCommand, World);
 				IRobotAsmCommandInterface::Execute_ConstructCommand(NewCommand, Words);
@@ -84,3 +89,4 @@ void URobotAsmInterpreterLibrary::RunCommandList_Index(const TArray<UObject*>& C
 		IRobotAsmCommandInterface::Execute_RunCommand(Command, CommandList, OnCommandFinish);
 	}
 }
+UE_ENABLE_OPTIMIZATION

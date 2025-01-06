@@ -7,7 +7,11 @@
 		{
 			"Name": "RobotArm",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"RobotAsmInterpreter",
+				"RobotUtils"
+			]
 		}
 	],
 	"Plugins": [
