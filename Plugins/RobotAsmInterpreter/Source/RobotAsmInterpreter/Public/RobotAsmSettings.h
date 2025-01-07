@@ -16,7 +16,7 @@ class ROBOTASMINTERPRETER_API URobotAsmSettings : public UDeveloperSettings
 	
 public:
 	UPROPERTY(config, EditAnywhere, Category = "Robot Assembly Settings")
-	TArray<TSubclassOf<UObject>> Commands;
+	TSet<TSubclassOf<UObject>> Commands;
 
 	static TSubclassOf<UObject> GetCommand(const FString& CommandName);
 

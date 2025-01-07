@@ -8,7 +8,7 @@ ULabelCommand::ULabelCommand()
 	Command = "label";
 }
 
-void ULabelCommand::RunCommand_Implementation(const TArray<UObject*>& CommandList, const FOnCommandFinish& OnFinish)
+void ULabelCommand::RunCommand_Implementation(const TArray<UObject*>& CommandList, const FOnCommandFinish& OnFinish, FRobotAsmStateWrapper State)
 {
 	OnFinish.ExecuteIfBound();
 }

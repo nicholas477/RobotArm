@@ -25,6 +25,8 @@ public:
 	UPROPERTY()
 	FOnCommandFinish OnFinish;
 
+	TSharedPtr<FRobotAsmState> State;
+
 	UFUNCTION()
 	void OnCommandFinish();
 };

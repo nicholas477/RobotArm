@@ -19,6 +19,9 @@ public:
 
 	virtual void ConstructCommand_Implementation(const TArray<FString>& Words) override;
 
-	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Label Command")
+	UFUNCTION(BlueprintNativeEvent, Category = "Goto Command")
+	bool ShouldBranch(const TArray<UObject*>& CommandList, FRobotAsmStateWrapper State);
+
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Label Command")
 	FString LabelName;
 };

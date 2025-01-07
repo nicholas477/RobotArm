@@ -64,11 +64,12 @@ void URobotAsmInterpreterLibrary::RunCommandList(const UObject* WorldContextObje
 			}
 		}
 
-		RunCommandList_Index(CommandList, OnFinish, 0);
+		TSharedPtr<FRobotAsmState> State = MakeShared<FRobotAsmState>();
+		RunCommandList_Index(CommandList, OnFinish, 0, State);
 	}
 }
 
-void URobotAsmInterpreterLibrary::RunCommandList_Index(const TArray<UObject*>& CommandList, const FOnCommandFinish& OnFinish, int32 CommandIndex)
+void URobotAsmInterpreterLibrary::RunCommandList_Index(const TArray<UObject*>& CommandList, const FOnCommandFinish& OnFinish, int32 CommandIndex, TSharedPtr<FRobotAsmState> State)
 {
 	if (!CommandList.IsValidIndex(CommandIndex))
 	{
@@ -91,14 +92,14 @@ void URobotAsmInterpreterLibrary::RunCommandList_Index(const TArray<UObject*>& C
 		{
 			const FString& LabelName = GotoCommand->LabelName;
 			int32 LabelIndex;
-			if (FindLabelIndex(CommandList, LabelName, LabelIndex))
+			if (GotoCommand->ShouldBranch(CommandList, FRobotAsmStateWrapper{ State }) && FindLabelIndex(CommandList, LabelName, LabelIndex))
 			{
-				RunCommandList_Index(CommandList, OnFinish, LabelIndex);
+				RunCommandList_Index(CommandList, OnFinish, LabelIndex, State);
 			}
 			else
 			{
 				// If we couldn't find a label then just skip this command
-				RunCommandList_Index(CommandList, OnFinish, CommandIndex + 1);
+				RunCommandList_Index(CommandList, OnFinish, CommandIndex + 1, State);
 			}
 			return;
 		}
@@ -109,13 +110,14 @@ void URobotAsmInterpreterLibrary::RunCommandList_Index(const TArray<UObject*>& C
 		CommandFinishListener->NextCommandIndex = CommandIndex + 1;
 		CommandFinishListener->CommandList = CommandList;
 		CommandFinishListener->OnFinish = OnFinish;
+		CommandFinishListener->State = State;
 
 		static const FName OnCommandFinishFunctionName("OnCommandFinish");
 		FOnCommandFinish OnCommandFinish;
 		OnCommandFinish.BindUFunction(CommandFinishListener, OnCommandFinishFunctionName);
 
 		UE_LOG(LogTemp, Warning, TEXT("Running command: Index: %d, Name: %s"), CommandIndex, *Command->GetName());
-		IRobotAsmCommandInterface::Execute_RunCommand(Command, CommandList, OnCommandFinish);
+		IRobotAsmCommandInterface::Execute_RunCommand(Command, CommandList, OnCommandFinish, FRobotAsmStateWrapper{State});
 	}
 }
 
@@ -133,5 +135,15 @@ bool URobotAsmInterpreterLibrary::FindLabelIndex(const TArray<UObject*>& Command
 		}
 	}
 	return false;
+}
+
+void URobotAsmInterpreterLibrary::WriteAssemblyStateVariable(FRobotAsmStateWrapper Wrapper, FName VariableName, int32 Value)
+{
+	Wrapper.State->Variables.FindOrAdd(VariableName) = Value;
+}
+
+int32 URobotAsmInterpreterLibrary::ReadAssemblyStateVariable(FRobotAsmStateWrapper Wrapper, FName VariableName)
+{
+	return Wrapper.State->Variables.FindOrAdd(VariableName);
 }
 UE_ENABLE_OPTIMIZATION

@@ -8,6 +8,23 @@
 
 DECLARE_DYNAMIC_DELEGATE(FOnCommandFinish);
 
+USTRUCT(BlueprintType)
+struct FRobotAsmState
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot Assembly Interpreter State")
+	TMap<FName, int32> Variables;
+};
+
+USTRUCT(BlueprintType)
+struct FRobotAsmStateWrapper
+{
+	GENERATED_BODY()
+
+	TSharedPtr<FRobotAsmState> State;
+};
+
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
 class URobotAsmCommandInterface : public UInterface
@@ -28,7 +45,7 @@ public:
 	void SetCommandWorld(UWorld* World);
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Robot Asm Command")
-	void RunCommand(const TArray<UObject*>& CommandList, const FOnCommandFinish& OnFinish);
+	void RunCommand(const TArray<UObject*>& CommandList, const FOnCommandFinish& OnFinish, FRobotAsmStateWrapper State);
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Robot Asm Command")
 	void ConstructCommand(const TArray<FString>& Words);
