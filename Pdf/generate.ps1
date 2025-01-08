@@ -1,0 +1,1 @@
+&"H:\Unreal Engine\UE_5.5\Engine\Binaries\Win64\UnrealEditor.exe" "H:\Unreal Projects\RobotArm\RobotArm.uproject" -run=GenerateAssemblyPDF -output="H:\Unreal Projects\RobotArm\Pdf\instructions"

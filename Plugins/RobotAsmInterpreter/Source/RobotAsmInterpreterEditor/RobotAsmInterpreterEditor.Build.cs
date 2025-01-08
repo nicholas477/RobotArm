@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class RobotAsmInterpreter : ModuleRules
+public class RobotAsmInterpreterEditor : ModuleRules
 {
-	public RobotAsmInterpreter(ReadOnlyTargetRules Target) : base(Target)
+	public RobotAsmInterpreterEditor(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		
@@ -12,7 +12,8 @@ public class RobotAsmInterpreter : ModuleRules
 			new string[]
 			{
 				"Core",
-				"DeveloperSettings"
+				"DeveloperSettings",
+				"RobotAsmInterpreter"
 			}
 		);
 			
@@ -26,15 +27,5 @@ public class RobotAsmInterpreter : ModuleRules
 				"SlateCore",
             }
 		);
-
-		if (Target.bBuildEditor)
-		{
-			PrivateDependencyModuleNames.AddRange(
-				new string[]
-				{
-					"MessageLog"
-				}
-			);
-		}
 	}
 }

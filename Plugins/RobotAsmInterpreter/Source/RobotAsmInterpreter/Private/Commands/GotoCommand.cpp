@@ -5,7 +5,14 @@
 
 UGotoCommand::UGotoCommand()
 {
-	Command = "goto";
+	Command = "jmp";
+
+	CommandShortDescription = INVTEXT("Jump");
+
+	CommandDescription = INVTEXT("Unconditionally jumps to a label.");
+	CommandLatexDescription = INVTEXT("Unconditionally jumps to a \\textbf{label}.");
+
+	CommandLatexExample = INVTEXT("label label1\n\njmp label1");
 }
 
 bool UGotoCommand::ShouldBranch_Implementation(const TArray<UObject*>& CommandList, FRobotAsmStateWrapper State)

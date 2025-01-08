@@ -19,6 +19,18 @@ public:
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Generic Robot Assembly Command")
 	FString Command;
 
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Generic Robot Assembly Command", meta = (MultiLine = true))
+	FText CommandShortDescription;
+
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Generic Robot Assembly Command", meta = (MultiLine = true))
+	FText CommandDescription;
+
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Generic Robot Assembly Command", meta = (MultiLine = true))
+	FText CommandLatexDescription;
+
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Generic Robot Assembly Command", meta = (MultiLine = true))
+	FText CommandLatexExample;
+
 	virtual void Tick(float DeltaTime) override;
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Generic Robot Assembly Command", meta=(DisplayName="Tick"))

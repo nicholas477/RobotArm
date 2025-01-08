@@ -6,6 +6,13 @@
 ULabelCommand::ULabelCommand()
 {
 	Command = "label";
+
+	CommandShortDescription = INVTEXT("Declare label");
+
+	CommandDescription = INVTEXT("Creates a new label that can be jumped to using the jmp command.");
+	CommandLatexDescription = INVTEXT("Creates a new label that can be jumped to using the \\textbf{jmp} command.");
+
+	CommandLatexExample = INVTEXT("label label1\n\njmp label1");
 }
 
 void ULabelCommand::RunCommand_Implementation(const TArray<UObject*>& CommandList, const FOnCommandFinish& OnFinish, FRobotAsmStateWrapper State)

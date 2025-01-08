@@ -1,0 +1,35 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage{fancyhdr}
+\usepackage{mwe}
+\begin{document}
+\pagestyle{fancy}
+\fancyhead{}
+\fancyhead[R]{Robot Assembly Language User's Manual}
+\fancyhead[L]{Polysaga Confidential}
+\fancyfoot[C]{\noindent\rule{\textwidth}{0.5pt}\par-\thepage-}
+
+\begin{titlepage}
+	\centering
+	{\Huge\bfseries Robot Assembly Language\par}
+	\vspace{1cm}
+	\noindent\rule{\textwidth}{2pt}\par
+	\vspace{4cm}
+	{\Large\bfseries User's Manual\par}
+
+	\vfill
+
+% Bottom of the page
+	{\large \today\par}
+\end{titlepage}
+
+\tableofcontents
+\pagebreak
+
+\section{Instruction Reference}
+This section lists the instructions comprising the Robot Assembly Language.
+\pagebreak
+
+\input{instructions/Instructions.tex}
+
+
+\end{document}
