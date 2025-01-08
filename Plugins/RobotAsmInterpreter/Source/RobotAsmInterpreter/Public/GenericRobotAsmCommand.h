@@ -40,4 +40,8 @@ public:
 	bool TickCommand = false;
 
 	virtual bool IsTickable() const override { return TickCommand; }
+
+#if WITH_EDITOR
+	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
 };

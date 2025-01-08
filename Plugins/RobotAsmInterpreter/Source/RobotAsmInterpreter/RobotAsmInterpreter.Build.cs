@@ -24,7 +24,18 @@ public class RobotAsmInterpreter : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
-			}
+                "MessageLog",
+            }
 		);
+
+		if (Target.bBuildEditor)
+		{
+			PrivateDependencyModuleNames.AddRange(
+				new string[]
+				{
+					"MessageLog"
+				}
+			);
+		}
 	}
 }

@@ -5,6 +5,8 @@
 
 #include "GenericRobotAsmCommand.h"
 
+#include "RobotAsmInterpreter.h"
+
 TSubclassOf<UObject> URobotAsmSettings::GetCommand(const FString& CommandName)
 {
 	for (TSubclassOf<UObject> CommandClass : Get()->Commands)
@@ -26,3 +28,12 @@ TSubclassOf<UObject> URobotAsmSettings::GetCommand(const FString& CommandName)
 
 	return TSubclassOf<UObject>();
 }
+
+#if WITH_EDITOR
+void URobotAsmSettings::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+	FRobotAsmInterpreterModule::CheckCommandConflicts();
+}
+#endif
