@@ -52,11 +52,11 @@ bool URobotAsmInterpreterLibrary::InterpretCode(const UObject* WorldContextObjec
 	return false;
 }
 
-void URobotAsmInterpreterLibrary::RunCommandList(const UObject* WorldContextObject, const TArray<UObject*>& CommandList, const FOnCommandFinish& OnFinish)
+void URobotAsmInterpreterLibrary::RunCommandList(const UObject* WorldContextObject, const FRunCommandOptions& Options)
 {
 	if (UWorld* World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull))
 	{
-		for (UObject* Command : CommandList)
+		for (UObject* Command : Options.CommandList)
 		{
 			if (IsValid(Command) && Command->GetClass()->ImplementsInterface(URobotAsmCommandInterface::StaticClass()))
 			{
@@ -64,26 +64,34 @@ void URobotAsmInterpreterLibrary::RunCommandList(const UObject* WorldContextObje
 			}
 		}
 
-		TSharedPtr<FRobotAsmState> State = MakeShared<FRobotAsmState>();
-		RunCommandList_Index(CommandList, OnFinish, 0, State);
+		RunCommandList_Index(Options);
 	}
 }
 
-void URobotAsmInterpreterLibrary::RunCommandList_Index(const TArray<UObject*>& CommandList, const FOnCommandFinish& OnFinish, int32 CommandIndex, TSharedPtr<FRobotAsmState> State)
+void URobotAsmInterpreterLibrary::RunCommandList_Index(const FRunCommandOptions& Options)
 {
-	if (!CommandList.IsValidIndex(CommandIndex))
+	if (!Options.CommandList.IsValidIndex(Options.CommandIndex))
 	{
-		OnFinish.ExecuteIfBound();
+		Options.OnFinish.ExecuteIfBound();
 		return;
 	}
 
-	UObject* Command = CommandList[CommandIndex];
+	if (Options.ShouldStopDelegate.IsBound())
+	{
+		if (Options.ShouldStopDelegate.Execute())
+		{
+			Options.OnFinish.ExecuteIfBound();
+			return;
+		}
+	}
+
+	UObject* Command = Options.CommandList[Options.CommandIndex];
 
 	if (IsValid(Command) && Command->GetClass()->ImplementsInterface(URobotAsmCommandInterface::StaticClass()))
 	{
 		if (Command->GetWorld() == nullptr || Command->GetWorld()->bIsTearingDown)
 		{
-			OnFinish.ExecuteIfBound();
+			Options.OnFinish.ExecuteIfBound();
 			return;
 		}
 
@@ -92,14 +100,19 @@ void URobotAsmInterpreterLibrary::RunCommandList_Index(const TArray<UObject*>& C
 		{
 			const FString& LabelName = GotoCommand->LabelName;
 			int32 LabelIndex;
-			if (GotoCommand->ShouldBranch(CommandList, FRobotAsmStateWrapper{ State }) && FindLabelIndex(CommandList, LabelName, LabelIndex))
+			if (FindLabelIndex(Options.CommandList, LabelName, LabelIndex) && GotoCommand->ShouldBranch(Options.CommandList, Options.State))
 			{
-				RunCommandList_Index(CommandList, OnFinish, LabelIndex, State);
+				FRunCommandOptions NewOptions = Options;
+				NewOptions.CommandIndex = LabelIndex;
+				RunCommandList_Index(NewOptions);
 			}
 			else
 			{
 				// If we couldn't find a label then just skip this command
-				RunCommandList_Index(CommandList, OnFinish, CommandIndex + 1, State);
+				FRunCommandOptions NewOptions = Options;
+				NewOptions.CommandIndex += 1;
+
+				RunCommandList_Index(NewOptions);
 			}
 			return;
 		}
@@ -107,17 +120,15 @@ void URobotAsmInterpreterLibrary::RunCommandList_Index(const TArray<UObject*>& C
 		URobotAsmCommandFinishListener* CommandFinishListener = NewObject<URobotAsmCommandFinishListener>();
 		CommandFinishListener->AddToRoot();
 
-		CommandFinishListener->NextCommandIndex = CommandIndex + 1;
-		CommandFinishListener->CommandList = CommandList;
-		CommandFinishListener->OnFinish = OnFinish;
-		CommandFinishListener->State = State;
+		CommandFinishListener->Options = Options;
+		CommandFinishListener->Options.CommandIndex += 1;
 
 		static const FName OnCommandFinishFunctionName("OnCommandFinish");
 		FOnCommandFinish OnCommandFinish;
 		OnCommandFinish.BindUFunction(CommandFinishListener, OnCommandFinishFunctionName);
 
-		UE_LOG(LogTemp, Warning, TEXT("Running command: Index: %d, Name: %s"), CommandIndex, *Command->GetName());
-		IRobotAsmCommandInterface::Execute_RunCommand(Command, CommandList, OnCommandFinish, FRobotAsmStateWrapper{State});
+		UE_LOG(LogTemp, Warning, TEXT("Running command: Index: %d, Name: %s"), Options.CommandIndex, *Command->GetName());
+		IRobotAsmCommandInterface::Execute_RunCommand(Command, Options.CommandList, OnCommandFinish, Options.State);
 	}
 }
 

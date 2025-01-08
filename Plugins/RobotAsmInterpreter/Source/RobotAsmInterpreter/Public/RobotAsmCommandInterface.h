@@ -22,6 +22,11 @@ struct FRobotAsmStateWrapper
 {
 	GENERATED_BODY()
 
+	FRobotAsmStateWrapper()
+	{
+		State = MakeShared<FRobotAsmState>();
+	}
+
 	TSharedPtr<FRobotAsmState> State;
 };
 

@@ -9,6 +9,7 @@
 #include "RobotUtilsFunctionLibrary.h"
 #include "RobotJointComponent.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnRobotJointRotate, URobotJointComponent*, Joint, float, DeltaSeconds, float, RotationDelta);
 
 UCLASS( ClassGroup=(Robot), meta=(BlueprintSpawnableComponent) )
 class ROBOTUTILS_API URobotJointComponent : public UPrimitiveComponent
@@ -72,6 +73,9 @@ public:
 	bool IsWithinRotationThreshold() const;
 
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
+	UPROPERTY(BlueprintAssignable, Category = "Joint Component")
+	FOnRobotJointRotate OnRobotJointRotate;
 
 	//~ Begin UPrimitiveComponent Interface.
 	virtual FPrimitiveSceneProxy* CreateSceneProxy() override;

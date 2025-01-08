@@ -7,7 +7,7 @@
 
 void URobotAsmCommandFinishListener::OnCommandFinish()
 {
-	URobotAsmInterpreterLibrary::RunCommandList_Index(CommandList, OnFinish, NextCommandIndex, State);
+	URobotAsmInterpreterLibrary::RunCommandList_Index(Options);
 
 	RemoveFromRoot();
 	MarkAsGarbage();

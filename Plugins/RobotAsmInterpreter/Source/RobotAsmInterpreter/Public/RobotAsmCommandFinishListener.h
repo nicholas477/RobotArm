@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
 #include "RobotAsmCommandInterface.h"
+#include "RobotAsmInterpreterLibrary.h"
 #include "RobotAsmCommandFinishListener.generated.h"
 
 /**
@@ -17,15 +18,7 @@ class ROBOTASMINTERPRETER_API URobotAsmCommandFinishListener : public UObject
 	
 public:
 	UPROPERTY()
-	int32 NextCommandIndex;
-
-	UPROPERTY()
-	TArray<UObject*> CommandList;
-
-	UPROPERTY()
-	FOnCommandFinish OnFinish;
-
-	TSharedPtr<FRobotAsmState> State;
+	FRunCommandOptions Options;
 
 	UFUNCTION()
 	void OnCommandFinish();

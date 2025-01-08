@@ -7,6 +7,8 @@
 #include "RobotAsmCommandInterface.h"
 #include "RobotAsmInterpreterLibrary.generated.h"
 
+DECLARE_DYNAMIC_DELEGATE_RetVal(bool, FShouldCommandListStop);
+
 USTRUCT(BlueprintType, meta=(HasNativeMake = "RobotAsmInterpreterLibrary.MakeOnCommandFinishWrapper"))
 struct FOnCommandFinishWrapper
 {
@@ -14,6 +16,27 @@ struct FOnCommandFinishWrapper
 
 	UPROPERTY(BlueprintReadOnly, Category = "Robot Asm Command|On Command Finish")
 	FOnCommandFinish OnCommandFinishDelegate;
+};
+
+USTRUCT(BlueprintType)
+struct FRunCommandOptions
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot Asm Command|Run Command Options")
+	TArray<UObject*> CommandList;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot Asm Command|Run Command Options")
+	FOnCommandFinish OnFinish;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot Asm Command|Run Command Options")
+	FRobotAsmStateWrapper State;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot Asm Command|Run Command Options")
+	int32 CommandIndex;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot Asm Command|Run Command Options")
+	FShouldCommandListStop ShouldStopDelegate;
 };
 
 /**
@@ -29,9 +52,9 @@ public:
 	static bool InterpretCode(const UObject* WorldContextObject, const FString& Code, FString& OutErrorString, TArray<UObject*>& OutCommands);
 
 	UFUNCTION(BlueprintCallable, Category = "Robot Assembly Interpreter", meta=(WorldContext = "WorldContextObject"))
-	static void RunCommandList(const UObject* WorldContextObject, const TArray<UObject*>& CommandList, const FOnCommandFinish& OnFinish);
+	static void RunCommandList(const UObject* WorldContextObject, const FRunCommandOptions& Options);
 
-	static void RunCommandList_Index(const TArray<UObject*>& CommandList, const FOnCommandFinish& OnFinish, int32 CommandIndex, TSharedPtr<FRobotAsmState> State);
+	static void RunCommandList_Index(const FRunCommandOptions& Options);
 
 	UFUNCTION(BlueprintPure, Category = "Robot Assembly Interpreter")
 	static bool FindLabelIndex(const TArray<UObject*>& CommandList, const FString& Label, int32& OutIndex);

@@ -154,6 +154,11 @@ void URobotJointComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 		const FQuat NewJointRotation = FQuat(Axis, FMath::DegreesToRadians(Rotation));
 
 		SetRelativeRotation(NewJointRotation);
+		OnRobotJointRotate.Broadcast(this, DeltaTime, NewRotationDelta);
+	}
+	else
+	{
+		OnRobotJointRotate.Broadcast(this, DeltaTime, 0.f);
 	}
 }
 
