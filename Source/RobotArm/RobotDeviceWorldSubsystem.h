@@ -45,4 +45,7 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Robot Device World Subsystem")
 	URobotDeviceComponent* LookupDevice(const FString& DeviceID) const;
+
+	UFUNCTION(BlueprintPure, Category = "Robot Device World Subsystem")
+	TArray<URobotDeviceComponent*> GetAllDevices() const;
 };

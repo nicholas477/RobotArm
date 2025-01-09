@@ -8,7 +8,7 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDeviceStart, URobotDeviceComponent*, Device);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDeviceStop, URobotDeviceComponent*, Device);
-DECLARE_DYNAMIC_DELEGATE_RetVal_TwoParams(int32, FGetDeviceStatus, URobotDeviceComponent*, Device, int32, MemoryOffset);
+DECLARE_DYNAMIC_DELEGATE_RetVal_OneParam(TArray<int32>, FGetDeviceStatus, URobotDeviceComponent*, Device);
 
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -36,7 +36,7 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable, Category = "Robot Device")
-	int32 GetDeviceStatus(int32 MemoryOffset);
+	TArray<int32> GetDeviceStatus();
 
 	// Device base name, before a number is appended to the end
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Robot Device")

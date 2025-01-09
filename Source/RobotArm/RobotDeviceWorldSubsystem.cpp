@@ -92,3 +92,19 @@ URobotDeviceComponent* URobotDeviceWorldSubsystem::LookupDevice(const FString& D
 
 	return nullptr;
 }
+
+TArray<URobotDeviceComponent*> URobotDeviceWorldSubsystem::GetAllDevices() const
+{
+	TArray<URobotDeviceComponent*> OutArray;
+	for (const FDeviceArray& DeviceArray : DeviceMap)
+	{
+		for (URobotDeviceComponent* Device : DeviceArray.Devices)
+		{
+			if (IsValid(Device))
+			{
+				OutArray.AddUnique(Device);
+			}
+		}
+	}
+	return OutArray;
+}

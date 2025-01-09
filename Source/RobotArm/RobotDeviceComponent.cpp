@@ -52,11 +52,11 @@ void URobotDeviceComponent::UninitializeComponent()
 	}
 }
 
-int32 URobotDeviceComponent::GetDeviceStatus(int32 MemoryOffset)
+TArray<int32> URobotDeviceComponent::GetDeviceStatus()
 {
 	if (GetDeviceStatusDelegate.IsBound())
 	{
-		return GetDeviceStatusDelegate.Execute(this, MemoryOffset);
+		return GetDeviceStatusDelegate.Execute(this);
 	}
-	return 0;
+	return {};
 }
