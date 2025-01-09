@@ -37,6 +37,9 @@ public:
 
 	bool RemoveDevice(FName DeviceName, int32 DeviceNumber);
 
+	UFUNCTION(BlueprintCallable, Category = "Robot Device World Subsystem")
+	void StopAllDevices();
+
 	UFUNCTION(BlueprintPure, Category = "Robot Device World Subsystem")
 	URobotDeviceComponent* GetDevice(FName DeviceName, int32 DeviceNumber) const;
 

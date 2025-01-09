@@ -31,5 +31,37 @@ This section lists the instructions comprising the Robot Assembly Language.
 
 \input{instructions/Instructions.tex}
 
+\section{Device List}
+This section lists the devices that can be accessed by the robot program. These devices can be started/stopped with the \textbf{start} and \textbf{stop} commands, and their memory state can be read with the \textbf{read} command.
+
+All devices have an index. For example, conveyor devices start with \textbf{conveyor0} and go to \textbf{conveyor1}, \textbf{conveyor2}, etc. Similarly, laser devices start with \textbf{laser0}.
+\pagebreak
+
+% Conveyor belt
+\addcontentsline{toc}{subsection}{conveyor}
+\Huge\bfseries conveyor : \large Conveyor belt\par
+\noindent\rule{ \textwidth }{2pt}\par
+\vspace{ 0.5cm }
+\mdseries\normalsize This is the conveyor belt device. \textbf{Start}ing a conveyor belt makes it move items at a rate of 30cm/s. \textbf{Stop}ping a conveyor belt stops it. \textbf{Read}ing a belt does nothing.
+
+\pagebreak
+
+% End effector
+\addcontentsline{toc}{subsection}{endeffector}
+\Huge\bfseries endeffector : \large End effector\par
+\noindent\rule{ \textwidth }{2pt}\par
+\vspace{ 0.5cm }
+\mdseries\normalsize This is the device on the end of the robot arm. It can grab packages. \textbf{Start}ing an end effector makes it grab packages. \textbf{Stop}ping an end effector makes it release packages. \textbf{Read}ing an end effector does nothing.
+
+\pagebreak
+
+% Laser
+\addcontentsline{toc}{subsection}{laser}
+\Huge\bfseries laser : \large Laser sensor\par
+\noindent\rule{ \textwidth }{2pt}\par
+\vspace{ 0.5cm }
+\mdseries\normalsize This device shoots a laser and returns 1 if the laser is obstructed. \textbf{Start}ing a laser does nothing. \textbf{Stop}ping a laser does nothing. \textbf{Read}ing a laser returns 1 if the laser is obstructed, 0 if the laser is unobstructed.
+
+\pagebreak
 
 \end{document}

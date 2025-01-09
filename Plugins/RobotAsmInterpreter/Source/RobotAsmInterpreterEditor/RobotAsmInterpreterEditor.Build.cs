@@ -13,7 +13,8 @@ public class RobotAsmInterpreterEditor : ModuleRules
 			{
 				"Core",
 				"DeveloperSettings",
-				"RobotAsmInterpreter"
+				"RobotAsmInterpreter",
+				"DeveloperSettings"
 			}
 		);
 			
@@ -25,7 +26,10 @@ public class RobotAsmInterpreterEditor : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
+				"ToolMenus"
             }
 		);
-	}
+
+        RuntimeDependencies.Add("$(ProjectDir)/PDF/Manual.pdf");
+    }
 }

@@ -3,6 +3,8 @@
 
 #include "RobotDeviceWorldSubsystem.h"
 
+#include "RobotDeviceComponent.h"
+
 int32 URobotDeviceWorldSubsystem::AddDevice(FName DeviceName, URobotDeviceComponent* Device)
 {
 	for (FDeviceArray& DeviceArray : DeviceMap)
@@ -31,6 +33,20 @@ bool URobotDeviceWorldSubsystem::RemoveDevice(FName DeviceName, int32 DeviceNumb
 		}
 	}
 	return false;
+}
+
+void URobotDeviceWorldSubsystem::StopAllDevices()
+{
+	for (const FDeviceArray& DeviceArray : DeviceMap)
+	{
+		for (URobotDeviceComponent* Device : DeviceArray.Devices)
+		{
+			if (IsValid(Device))
+			{
+				Device->StopDevice();
+			}
+		}
+	}
 }
 
 URobotDeviceComponent* URobotDeviceWorldSubsystem::GetDevice(FName DeviceName, int32 DeviceNumber) const

@@ -83,3 +83,10 @@ Releases/*
 
 hooks/
 lfs/
+
+PDF/*.log
+PDF/*.gz
+PDF/instructions
+PDF/*.toc
+PDF/*.pdf
+PDF/*.aux
