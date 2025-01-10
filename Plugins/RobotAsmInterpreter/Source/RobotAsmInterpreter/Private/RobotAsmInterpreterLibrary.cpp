@@ -123,12 +123,13 @@ void URobotAsmInterpreterLibrary::RunCommandList_Index(const FRunCommandOptions&
 		CommandFinishListener->Options = Options;
 		CommandFinishListener->Options.CommandIndex += 1;
 
+		FRunCommandOptions ThisCommandOptions = Options;
+
 		static const FName OnCommandFinishFunctionName("OnCommandFinish");
-		FOnCommandFinish OnCommandFinish;
-		OnCommandFinish.BindUFunction(CommandFinishListener, OnCommandFinishFunctionName);
+		ThisCommandOptions.OnFinish.BindUFunction(CommandFinishListener, OnCommandFinishFunctionName);
 
 		UE_LOG(LogTemp, Warning, TEXT("Running command: Index: %d, Name: %s"), Options.CommandIndex, *Command->GetName());
-		IRobotAsmCommandInterface::Execute_RunCommand(Command, Options.CommandList, OnCommandFinish, Options.State);
+		IRobotAsmCommandInterface::Execute_RunCommand(Command, ThisCommandOptions);
 	}
 }
 
@@ -144,6 +145,15 @@ bool URobotAsmInterpreterLibrary::FindLabelIndex(const TArray<UObject*>& Command
 				return true;
 			}
 		}
+	}
+	return false;
+}
+
+bool URobotAsmInterpreterLibrary::ShouldCommandListStop(const FShouldCommandListStop& ShouldStopDelegate)
+{
+	if (ShouldStopDelegate.IsBound())
+	{
+		return ShouldStopDelegate.Execute();
 	}
 	return false;
 }

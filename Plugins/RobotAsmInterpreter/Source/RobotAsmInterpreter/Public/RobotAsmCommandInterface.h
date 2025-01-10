@@ -7,6 +7,7 @@
 #include "RobotAsmCommandInterface.generated.h"
 
 DECLARE_DYNAMIC_DELEGATE(FOnCommandFinish);
+DECLARE_DYNAMIC_DELEGATE_RetVal(bool, FShouldCommandListStop);
 
 USTRUCT(BlueprintType)
 struct FRobotAsmState
@@ -30,6 +31,46 @@ struct FRobotAsmStateWrapper
 	TSharedPtr<FRobotAsmState> State;
 };
 
+
+USTRUCT(BlueprintType, meta = (HasNativeMake = "RobotAsmInterpreterLibrary.MakeOnCommandFinishWrapper"))
+struct FOnCommandFinishWrapper
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, Category = "Robot Asm Command|On Command Finish")
+	FOnCommandFinish OnCommandFinishDelegate;
+};
+
+USTRUCT(BlueprintType, meta = (HasNativeMake = "RobotAsmInterpreterLibrary.MakeShouldCommandListStopWrapper"))
+struct FShouldCommandListStopWrapper
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, Category = "Robot Asm Command|Should Command List Stop")
+	FShouldCommandListStop ShouldCommandListSTopDelegate;
+};
+
+USTRUCT(BlueprintType)
+struct FRunCommandOptions
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot Asm Command|Run Command Options")
+	TArray<UObject*> CommandList;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot Asm Command|Run Command Options")
+	FOnCommandFinish OnFinish;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot Asm Command|Run Command Options")
+	FRobotAsmStateWrapper State;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot Asm Command|Run Command Options")
+	int32 CommandIndex;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot Asm Command|Run Command Options")
+	FShouldCommandListStop ShouldStopDelegate;
+};
+
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
 class URobotAsmCommandInterface : public UInterface
@@ -50,7 +91,7 @@ public:
 	void SetCommandWorld(UWorld* World);
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Robot Asm Command")
-	void RunCommand(const TArray<UObject*>& CommandList, const FOnCommandFinish& OnFinish, FRobotAsmStateWrapper State);
+	void RunCommand(const FRunCommandOptions& Options);
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Robot Asm Command")
 	void ConstructCommand(const TArray<FString>& Words);

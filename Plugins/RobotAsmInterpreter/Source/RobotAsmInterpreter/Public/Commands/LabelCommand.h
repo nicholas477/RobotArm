@@ -17,7 +17,7 @@ class ROBOTASMINTERPRETER_API ULabelCommand : public UGenericRobotAsmCommand
 public:
 	ULabelCommand();
 
-	virtual void RunCommand_Implementation(const TArray<UObject*>& CommandList, const FOnCommandFinish& OnFinish, FRobotAsmStateWrapper State) override;
+	virtual void RunCommand_Implementation(const FRunCommandOptions& Options) override;
 	virtual void ConstructCommand_Implementation(const TArray<FString>& Words) override;
 
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Label Command")

@@ -15,9 +15,9 @@ ULabelCommand::ULabelCommand()
 	CommandLatexExample = INVTEXT("label label1\n\njmp label1");
 }
 
-void ULabelCommand::RunCommand_Implementation(const TArray<UObject*>& CommandList, const FOnCommandFinish& OnFinish, FRobotAsmStateWrapper State)
+void ULabelCommand::RunCommand_Implementation(const FRunCommandOptions& Options)
 {
-	OnFinish.ExecuteIfBound();
+	Options.OnFinish.ExecuteIfBound();
 }
 
 void ULabelCommand::ConstructCommand_Implementation(const TArray<FString>& Words)

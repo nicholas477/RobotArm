@@ -7,38 +7,6 @@
 #include "RobotAsmCommandInterface.h"
 #include "RobotAsmInterpreterLibrary.generated.h"
 
-DECLARE_DYNAMIC_DELEGATE_RetVal(bool, FShouldCommandListStop);
-
-USTRUCT(BlueprintType, meta=(HasNativeMake = "RobotAsmInterpreterLibrary.MakeOnCommandFinishWrapper"))
-struct FOnCommandFinishWrapper
-{
-	GENERATED_BODY()
-
-	UPROPERTY(BlueprintReadOnly, Category = "Robot Asm Command|On Command Finish")
-	FOnCommandFinish OnCommandFinishDelegate;
-};
-
-USTRUCT(BlueprintType)
-struct FRunCommandOptions
-{
-	GENERATED_BODY()
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot Asm Command|Run Command Options")
-	TArray<UObject*> CommandList;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot Asm Command|Run Command Options")
-	FOnCommandFinish OnFinish;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot Asm Command|Run Command Options")
-	FRobotAsmStateWrapper State;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot Asm Command|Run Command Options")
-	int32 CommandIndex;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot Asm Command|Run Command Options")
-	FShouldCommandListStop ShouldStopDelegate;
-};
-
 /**
  * 
  */
@@ -62,8 +30,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Robot Assembly Interpreter")
 	static void FinishCommand(const FOnCommandFinish& OnFinish) { OnFinish.ExecuteIfBound(); };
 
+	UFUNCTION(BlueprintCallable, Category = "Robot Assembly Interpreter")
+	static bool ShouldCommandListStop(const FShouldCommandListStop& ShouldStopDelegate);
+
 	UFUNCTION(BlueprintPure, Category = "Robot Assembly Interpreter")
 	static FOnCommandFinishWrapper MakeOnCommandFinishWrapper(const FOnCommandFinish& OnFinish) { return FOnCommandFinishWrapper{OnFinish}; }
+
+	UFUNCTION(BlueprintPure, Category = "Robot Assembly Interpreter")
+	static FShouldCommandListStopWrapper MakeShouldCommandListStopWrapper(const FShouldCommandListStop& ShouldCommandListStop) { return FShouldCommandListStopWrapper{ ShouldCommandListStop }; }
 
 	UFUNCTION(BlueprintPure, Category = "Robot Assembly Interpreter")
 	static FRobotAsmState ReadAssemblyState(const FRobotAsmStateWrapper& Wrapper) { return *Wrapper.State; };
