@@ -20,10 +20,14 @@ bool UGotoCommand::ShouldBranch_Implementation(const TArray<UObject*>& CommandLi
 	return true;
 }
 
-void UGotoCommand::ConstructCommand_Implementation(const TArray<FString>& Words)
+bool UGotoCommand::ConstructCommand_Implementation(const TArray<FString>& Words)
 {
 	if (Words.Num() >= 2)
 	{
 		LabelName = Words[1];
+
+		return true;
 	}
+
+	return false;
 }

@@ -20,10 +20,14 @@ void ULabelCommand::RunCommand_Implementation(const FRunCommandOptions& Options)
 	Options.OnFinish.ExecuteIfBound();
 }
 
-void ULabelCommand::ConstructCommand_Implementation(const TArray<FString>& Words)
+bool ULabelCommand::ConstructCommand_Implementation(const TArray<FString>& Words)
 {
 	if (Words.Num() == 2)
 	{
 		LabelName = Words[1];
+
+		return true;
 	}
+
+	return false;
 }

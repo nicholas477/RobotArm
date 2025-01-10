@@ -17,7 +17,7 @@ class ROBOTASMINTERPRETER_API UGotoCommand : public UGenericRobotAsmCommand
 public:
 	UGotoCommand();
 
-	virtual void ConstructCommand_Implementation(const TArray<FString>& Words) override;
+	virtual bool ConstructCommand_Implementation(const TArray<FString>& Words) override;
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Goto Command")
 	bool ShouldBranch(const TArray<UObject*>& CommandList, FRobotAsmStateWrapper State);

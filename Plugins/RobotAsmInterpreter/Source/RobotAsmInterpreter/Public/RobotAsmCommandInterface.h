@@ -94,5 +94,5 @@ public:
 	void RunCommand(const FRunCommandOptions& Options);
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Robot Asm Command")
-	void ConstructCommand(const TArray<FString>& Words);
+	bool ConstructCommand(const TArray<FString>& Words);
 };

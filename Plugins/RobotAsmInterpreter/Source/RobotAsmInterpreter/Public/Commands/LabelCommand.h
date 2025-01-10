@@ -18,7 +18,7 @@ public:
 	ULabelCommand();
 
 	virtual void RunCommand_Implementation(const FRunCommandOptions& Options) override;
-	virtual void ConstructCommand_Implementation(const TArray<FString>& Words) override;
+	virtual bool ConstructCommand_Implementation(const TArray<FString>& Words) override;
 
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Label Command")
 	FString LabelName;
