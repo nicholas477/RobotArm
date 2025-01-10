@@ -47,6 +47,24 @@ void BreakpointWithError(FFrame& Stack, const FText& Text)
 }
 #endif
 
+FGuid USaveGameFunctionLibrary::GetPerMapGUID(const UObject* Object)
+{
+	if (const UWorld* World = GEngine->GetWorldFromContextObject(Object, EGetWorldErrorMode::LogAndReturnNull))
+	{
+		const FString MapName = World->GetOutermost()->GetLoadedPath().GetPackageName();
+
+		FBlake3 VarHashBuilder;
+		VarHashBuilder.Update(*MapName, MapName.NumBytesWithoutNull());
+		const FString ClassName = Object->GetClass()->GetClassPathName().GetAssetName().ToString();
+
+		VarHashBuilder.Update(*ClassName, ClassName.NumBytesWithoutNull());
+		FBlake3Hash VarHash = VarHashBuilder.Finalize();
+		return FGuid::NewGuidFromHash(VarHash);
+	}
+
+	return FGuid();
+}
+
 bool USaveGameFunctionLibrary::WasObjectLoaded(const UObject* Object)
 {
 	return Object && Object->HasAnyFlags(RF_WasLoaded | RF_LoadCompleted);

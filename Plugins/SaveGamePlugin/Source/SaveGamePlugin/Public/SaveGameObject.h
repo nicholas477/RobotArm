@@ -163,4 +163,8 @@ public:
 	/** Assigns a new SpawnID to this actor */
 	UFUNCTION(BlueprintNativeEvent, Category="SaveGame|Spawn")
 	bool SetSpawnID(const FGuid& NewID);
+
+	/** Called on the CDO to see if this class should spawn if the actor doesn't exist in the map */
+	UFUNCTION(BlueprintNativeEvent, Category = "SaveGame|Spawn")
+	bool SpawnIfNotExists();
 };

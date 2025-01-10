@@ -305,19 +305,28 @@ void TSaveGameSerializer<bIsLoading, bIsTextFormat>::SerializeActors()
 				{
 					UClass* ActorClass = Class.TryLoadClass<AActor>();
 
-					// This is a spawned actor, let's spawn it
-					FActorSpawnParameters SpawnParameters;
-
-					// If we were handling levels, specify it here
-					SpawnParameters.OverrideLevel = World->GetCurrentLevel();
-					SpawnParameters.Name = *ActorName;
-					SpawnParameters.bNoFail = true;
-					
-					Actor = World->SpawnActor(ActorClass, nullptr, nullptr, SpawnParameters);
-
-					if (SpawnID.IsValid() && Actor->Implements<USaveGameSpawnActor>())
+					bool SpawnActor = true;
+					if (ActorClass->ImplementsInterface(USaveGameSpawnActor::StaticClass()))
 					{
-						ISaveGameSpawnActor::Execute_SetSpawnID(Actor, SpawnID);
+						SpawnActor = ISaveGameSpawnActor::Execute_SpawnIfNotExists(ActorClass->ClassDefaultObject);
+					}
+
+					if (SpawnActor)
+					{
+						// This is a spawned actor, let's spawn it
+						FActorSpawnParameters SpawnParameters;
+
+						// If we were handling levels, specify it here
+						SpawnParameters.OverrideLevel = World->GetCurrentLevel();
+						SpawnParameters.Name = *ActorName;
+						SpawnParameters.bNoFail = true;
+
+						Actor = World->SpawnActor(ActorClass, nullptr, nullptr, SpawnParameters);
+
+						if (SpawnID.IsValid() && Actor->Implements<USaveGameSpawnActor>())
+						{
+							ISaveGameSpawnActor::Execute_SetSpawnID(Actor, SpawnID);
+						}
 					}
 				}
 
@@ -330,7 +339,7 @@ void TSaveGameSerializer<bIsLoading, bIsTextFormat>::SerializeActors()
 					ProxyArchive.AddRedirect(FSoftObjectPath(LevelAssetPath, ActorSubPath), FSoftObjectPath(Actor));
 				}
 				
-				check(IsValid(Actor));
+				//check(IsValid(Actor));
 			});
 		}
 	}
@@ -367,8 +376,12 @@ void TSaveGameSerializer<bIsLoading, bIsTextFormat>::SerializeActors()
 				++ActorsIt;
 			}
 
-			check(IsValid(Actor));
-			
+			//check(IsValid(Actor));
+			if (!IsValid(Actor))
+			{
+				continue;
+			}
+
 			// Do the actual serialization of the properties
 			SerializeActor(ActorMap, Actor, [&](const FString&, const FSoftClassPath&, const FGuid& SpawnID, FStructuredArchive::FSlot& ActorSlot)
 			{

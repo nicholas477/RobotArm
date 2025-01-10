@@ -15,6 +15,15 @@ class SAVEGAMEPLUGIN_API USaveGameFunctionLibrary : public UBlueprintFunctionLib
 
 public:
 	/**
+	 * Returns a hash specific to this object class + map pair. Use this to identify unique spawned objects per map.
+	 * 
+	 * @param Object to look up map/class from
+	 * @return a GUID unique to this object class + map pair
+	 */
+	UFUNCTION(BlueprintPure, Category = "SaveGamePlugin|Utilities")
+	static FGuid GetPerMapGUID(const UObject* Object);
+
+	/**
 	 * Check if an object was loaded from an asset (i.e. a Static Mesh, Actor from a level, etc.)
 	 * 
 	 * @param Object The object to check if loaded
