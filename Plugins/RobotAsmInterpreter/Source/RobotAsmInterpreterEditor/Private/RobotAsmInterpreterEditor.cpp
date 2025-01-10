@@ -8,6 +8,7 @@
 #include "Misc/FileHelper.h"
 #include "HAL/FileManager.h"
 #include "GenericPlatform/GenericPlatformProcess.h"
+#include "Misc/MonitoredProcess.h"
 
 
 #define LOCTEXT_NAMESPACE "FRobotAsmInterpreterEditorModule"
@@ -108,16 +109,26 @@ void FRobotAsmInterpreterEditorModule::GenerateAssemblyManualPDF()
 	}
 
 	// Now run pdflatex
-	int32 ReturnCode;
-	FString StdOut, StdErr;
+	//int32 ReturnCode;
+	//FString StdOut, StdErr;
 	UE_LOG(LogTemp, Warning, TEXT("Running latex: %s"), *PDFLatexPath);
-	FPlatformProcess::ExecProcess(*PDFLatexPath, *FString::Printf(L"-interaction=batchmode \"%s\"", *ManualPath), &ReturnCode, &StdOut, &StdErr, *URobotAsmInterpreterEditorSettings::GetPDFOutputBasePath());
+	const FString WorkingDirectory = URobotAsmInterpreterEditorSettings::GetPDFOutputBasePath();
+	const FString ExtraOptions = URobotAsmInterpreterEditorSettings::Get()->LatexOptions;
+	const FString PrefixExtraOptions = URobotAsmInterpreterEditorSettings::Get()->PrefixLatexOptions;
+	//FPlatformProcess::ExecProcess(*PDFLatexPath, *FString::Printf(L"%s \"%s\" %s", *PrefixExtraOptions, *ManualPath, *ExtraOptions), &ReturnCode, &StdOut, &StdErr, *WorkingDirectory);
+	TSharedPtr<FMonitoredProcess> PCSX2Process =
+		MakeShareable(new FMonitoredProcess(PDFLatexPath, FString::Printf(L"%s \"%s\" %s", *PrefixExtraOptions, *ManualPath, *ExtraOptions), false));
+
+	PCSX2Process->OnOutput().BindLambda([](FString Output){
+		UE_LOG(LogTemp, Warning, TEXT("PDFLatex output: %s"), *Output);
+	});
+	ensure(PCSX2Process->Launch());
 	
-	UE_LOG(LogTemp, Warning, TEXT("PDFLatex return val: %d"), ReturnCode);
-	UE_LOG(LogTemp, Warning, TEXT("PDFLatex stdout:"));
-	UE_LOG(LogTemp, Warning, TEXT("%s"), *StdOut);
-	UE_LOG(LogTemp, Warning, TEXT("PDFLatex stderr:"));
-	UE_LOG(LogTemp, Warning, TEXT("%s"), *StdErr);
+	//UE_LOG(LogTemp, Warning, TEXT("PDFLatex return val: %d"), ReturnCode);
+	//UE_LOG(LogTemp, Warning, TEXT("PDFLatex stdout:"));
+	//UE_LOG(LogTemp, Warning, TEXT("%s"), *StdOut);
+	//UE_LOG(LogTemp, Warning, TEXT("PDFLatex stderr:"));
+	//UE_LOG(LogTemp, Warning, TEXT("%s"), *StdErr);
 }
 
 #undef LOCTEXT_NAMESPACE

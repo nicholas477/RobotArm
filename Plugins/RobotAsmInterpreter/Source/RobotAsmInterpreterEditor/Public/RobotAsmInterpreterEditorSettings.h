@@ -25,6 +25,14 @@ public:
 	UPROPERTY(config, EditAnywhere, Category = "Robot Assembly Editor Settings")
 	FString LatexPath;
 
+	// PDFLatex command line options
+	UPROPERTY(config, EditAnywhere, Category = "Robot Assembly Editor Settings")
+	FString PrefixLatexOptions;
+
+	// PDFLatex command line options
+	UPROPERTY(config, EditAnywhere, Category = "Robot Assembly Editor Settings")
+	FString LatexOptions;
+
 	static URobotAsmInterpreterEditorSettings* Get() { return GetMutableDefault<URobotAsmInterpreterEditorSettings>(); }
 
 	// Gets the full output path of the PDF

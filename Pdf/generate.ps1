@@ -1,1 +1,7 @@
-&"H:\Unreal Engine\UE_5.5\Engine\Binaries\Win64\UnrealEditor.exe" "H:\Unreal Projects\RobotArm\RobotArm.uproject" -run=GenerateAssemblyPDF
+$scriptpath = $MyInvocation.MyCommand.Path
+$dir = Split-Path $scriptpath
+Set-Location -Path $dir
+
+Write-Output "Hello World"
+
+& pdflatex ./Manual.tex
