@@ -47,7 +47,7 @@ struct FShouldCommandListStopWrapper
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadOnly, Category = "Robot Asm Command|Should Command List Stop")
-	FShouldCommandListStop ShouldCommandListSTopDelegate;
+	FShouldCommandListStop ShouldCommandListStopDelegate;
 };
 
 USTRUCT(BlueprintType)
