@@ -20,6 +20,10 @@ URobotJointComponent::URobotJointComponent(const FObjectInitializer& ObjectIniti
 
 	bWantsInitializeComponent = true;
 	PrimaryComponentTick.bCanEverTick = true;
+
+	bVisibleInReflectionCaptures = false;
+	bVisibleInRayTracing = false;
+	bVisibleInRealTimeSkyCaptures = false;
 }
 
 void URobotJointComponent::InitializeComponent()

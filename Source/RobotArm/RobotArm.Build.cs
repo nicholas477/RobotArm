@@ -8,6 +8,16 @@ public class RobotArm : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "RobotUtils", "RobotAsmInterpreter", "Mover", });
+		PublicDependencyModuleNames.AddRange(new string[] { 
+			"Core",
+			"CoreUObject",
+			"Engine",
+			"InputCore",
+			"RobotUtils",
+			"RobotAsmInterpreter",
+			"Mover",
+			"RHI",
+			"RenderCore"
+        });
 	}
 }

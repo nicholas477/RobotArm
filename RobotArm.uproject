@@ -11,7 +11,8 @@
 			"AdditionalDependencies": [
 				"RobotAsmInterpreter",
 				"RobotUtils",
-				"Engine"
+				"Engine",
+				"AIModule"
 			]
 		}
 	],
@@ -37,8 +38,8 @@
 			"Enabled": true
 		},
 		{
-			"Name": "MoverExamples",
-			"Enabled": true
+			"Name": "Bridge",
+			"Enabled": false
 		}
 	]
 }
