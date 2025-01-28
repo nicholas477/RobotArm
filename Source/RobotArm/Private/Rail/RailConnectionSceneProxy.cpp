@@ -14,10 +14,24 @@ FRailConnectionSceneProxy::FRailConnectionSceneProxy(const URailConnectionCompon
 	, VertexFactory(GetScene().GetFeatureLevel(), "FRailConnectionSceneProxy")
 	, RailConnectionComponent(InComponent)
 	, Color(InComponent->VisualizationColor)
+	, VisualizationSides(InComponent->VisualizationSides)
+	, bDrawArrow(InComponent->HasAnyCircularConnections() && InComponent->ShowArrow)
 {
 	TArray<FDynamicMeshVertex> OutVerts;
 	CreateLineData(OutVerts);
-	bDrawArrow = InComponent->HasAnyCircularConnections();
+
+	for (const FRailConnection& Connection : InComponent->Connections)
+	{
+		if (Connection.ConnectionType == ERailConnectionType::Circular)
+		{
+			for (int i = 0; i < 32; ++i)
+			{
+				FVector4 Pos = InComponent->GetPosAlongPath(Connection.Connection, i / 32.f);
+				Pos.W = i / 32.f;
+				ConnectionPoints.Add(Pos);
+			}
+		}
+	}
 	
 	if (OutVerts.Num() > 0)
 	{
@@ -54,6 +68,11 @@ void FRailConnectionSceneProxy::GetDynamicMeshElements(const TArray<const FScene
 			{
 				DrawArrow(ViewIndex, Collector, View);
 			}
+
+			//for (const FVector4& ConnectionPoint : ConnectionPoints)
+			//{
+			//	Collector.GetPDI(ViewIndex)->DrawPoint(ConnectionPoint, Color, ConnectionPoint.W * 8.f, SDPG_World);
+			//}
 		}
 	}
 }
@@ -144,12 +163,38 @@ void FRailConnectionSceneProxy::CreateLineData(TArray<FDynamicMeshVertex>& OutVe
 		NewVert.Color = FColor::White;
 	}
 
-	for (const FVector& ConnectionPosition : ConnectionPositions)
+	for (const FRailConnection& Connection : RailConnectionComponent->Connections)
 	{
-		auto& NewVert = OutVerts.AddDefaulted_GetRef();
-		NewVert.Position = FVector3f(ConnectionPosition);
-		LineIndexBuffer.Indices.Add(VertZero);
-		LineIndexBuffer.Indices.Add(OutVerts.Num() - 1);
-		NewVert.Color = FColor::White;
+		if (Connection.Connection == nullptr)
+		{
+			continue;
+		}
+
+		if (Connection.ConnectionType == ERailConnectionType::Straight)
+		{
+			const FVector ConnectionPosition = RailConnectionComponent->GetComponentTransform().InverseTransformPosition(Connection.Connection->GetComponentLocation());
+			auto& NewVert = OutVerts.AddDefaulted_GetRef();
+			NewVert.Position = FVector3f(ConnectionPosition);
+			LineIndexBuffer.Indices.Add(VertZero);
+			LineIndexBuffer.Indices.Add(OutVerts.Num() - 1);
+			NewVert.Color = FColor::White;
+		}
+		else
+		{
+			for (int32 i = 0; i <= VisualizationSides; ++i)
+			{
+				const int32 CurrentPosIndex = OutVerts.Num();
+
+				auto& NewVert = OutVerts.AddDefaulted_GetRef();
+				const FVector Pos = RailConnectionComponent->GetPosAlongPath(Connection.Connection, i / (float)VisualizationSides);
+				NewVert.Position = FVector3f(RailConnectionComponent->GetComponentTransform().InverseTransformPosition(Pos));
+				if (i > 0)
+				{
+					LineIndexBuffer.Indices.Add(CurrentPosIndex - 1);
+					LineIndexBuffer.Indices.Add(CurrentPosIndex);
+				}
+				NewVert.Color = FColor::White;
+			}
+		}
 	}
 }

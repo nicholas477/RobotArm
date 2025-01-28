@@ -5,6 +5,7 @@
 
 #include "Rail/RailConnectionSceneProxy.h"
 
+UE_DISABLE_OPTIMIZATION
 URailConnectionComponent::URailConnectionComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
@@ -13,7 +14,9 @@ URailConnectionComponent::URailConnectionComponent()
 	bVisibleInRayTracing = false;
 	bVisibleInRealTimeSkyCaptures = false;
 
+	ShowArrow = true;
 	VisualizationColor = FColor::White;
+	VisualizationSides = 32;
 }
 
 void URailConnectionComponent::AddConnection(const FRailConnection& Connection)
@@ -88,3 +91,86 @@ bool URailConnectionComponent::HasAnyCircularConnections() const
 
 	return false;
 }
+
+// 2d Ray/Ray intersection
+// https://stackoverflow.com/questions/2931573/determining-if-two-rays-intersect
+static bool RaysIntersection(const FVector2D& Pos1, const FVector2D& Dir1, const FVector2D& Pos2, const FVector2D& Dir2, FVector2D& Result, float& Dist)
+{
+	if (Pos1 == Pos2) {
+		Result = Pos1;
+		return true;
+	}
+	auto dx = Pos2.X - Pos1.X;
+	auto dy = Pos2.Y - Pos1.Y;
+	auto det = Dir2.X * Dir1.Y - Dir2.Y * Dir1.X;
+	if (det != 0) { // near parallel line will yield noisy results
+		double u = (dy * Dir2.X - dx * Dir2.Y) / (double)det;
+		double v = (dy * Dir1.X - dx * Dir1.Y) / (double)det;
+		if (u >= 0 && v >= 0) {
+			Dist = u;
+			Result = Pos1 + Dir1 * u;
+			return true;
+		}
+	}
+	return false;
+}
+
+static FVector2D To2D(const FVector& Vec)
+{
+	return FVector2D(Vec.X, Vec.Y);
+}
+
+FVector URailConnectionComponent::GetPosAlongPath(URailConnectionComponent* Connection, float NormalizedTime) const
+{
+	if (Connection == nullptr || NormalizedTime <= 0.f || !Connections.Contains(FRailConnection(Connection)))
+	{
+		return GetComponentTransform().GetLocation();
+	}
+
+	if (NormalizedTime >= 1.f)
+	{
+		return Connection->GetComponentTransform().GetLocation();
+	}
+
+	const FRailConnection& RailConnection = *Connections.Find(FRailConnection(Connection));
+	
+	if (RailConnection.ConnectionType == ERailConnectionType::Straight)
+	{
+		return FMath::Lerp(GetComponentTransform().GetLocation(), Connection->GetComponentTransform().GetLocation(), NormalizedTime);
+	}
+	else if (RailConnection.ConnectionType == ERailConnectionType::Circular)
+	{
+		const FVector2D Pos = To2D(GetComponentTransform().GetLocation());
+		const FVector2D OtherPos = To2D(Connection->GetComponentTransform().GetLocation());
+
+		const FVector2D Dir = To2D(GetComponentTransform().TransformVectorNoScale(FVector(1.f, 0.f, 0.f)));
+		const FVector2D OtherDir = To2D(Connection->GetComponentTransform().TransformVectorNoScale(FVector(1.f, 0.f, 0.f)));
+
+		float Dist;
+		FVector2D Intersect;
+		if (RaysIntersection(Pos, Dir, OtherPos, OtherDir, Intersect, Dist))
+		{
+			// Angle in radians
+			const float Ang = FMath::Acos(Dir.Dot(OtherDir));
+
+			const float Sine = 1.f - FMath::Sin(Ang * (1.f - NormalizedTime));
+			const float Cos = FMath::Cos(Ang * (1.f - NormalizedTime));
+
+			const float Side = FMath::Sign(GetComponentTransform().InverseTransformPosition(Connection->GetComponentTransform().GetLocation()).Y);
+
+			if (Side > 0.f)
+			{
+				FVector OutVector = FVector(Cos * Dist, Sine * Dist, 0.f);
+				return GetComponentTransform().TransformPosition(OutVector);
+			}
+			else
+			{
+				FVector OutVector = FVector(Cos * Dist, Sine * Dist * -1.f, 0.f);
+				return GetComponentTransform().TransformPosition(OutVector);
+			}
+		}
+	}
+
+	return FVector(0);
+}
+UE_ENABLE_OPTIMIZATION

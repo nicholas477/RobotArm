@@ -60,14 +60,23 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Rail")
 	void AddConnection(const FRailConnection& Connection);
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Rendering")
+	bool ShowArrow;
+
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Rail")
 	FColor VisualizationColor;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Rail", meta=(ClampMin=1))
+	int32 VisualizationSides;
 
 	// Get the positions of each connected component relative to this component
 	TArray<FVector> GetConnectionRelativePositions() const;
 
 	// Returns if any of the connections are circular. This is used for drawing the arrow
 	bool HasAnyCircularConnections() const;
+
+	// Returns the position along the path, in normalized (0-1) time
+	FVector GetPosAlongPath(URailConnectionComponent* Connection, float NormalizedTime) const;
 
 	//~ Begin UPrimitiveComponent Interface.
 	virtual FPrimitiveSceneProxy* CreateSceneProxy() override;

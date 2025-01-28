@@ -43,6 +43,8 @@ private:
 	void DrawArrow(int32 ViewIndex, FMeshElementCollector& Collector, const FSceneView* View) const;
 
 	FColor Color;
+	int32 VisualizationSides;
+	TArray<FVector4> ConnectionPoints;
 	bool bDrawArrow;
 
 	void CreateLineData(TArray<FDynamicMeshVertex>& OutVerts);
