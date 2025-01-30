@@ -17,13 +17,15 @@ URobotDeviceComponent::URobotDeviceComponent()
 	DeviceBaseName = DefaultDeviceName;
 	DeviceNumber = 0;
 	DeviceName = NAME_None;
+
+	bRegisterDevice = true;
 }
 
 void URobotDeviceComponent::InitializeComponent()
 {
 	Super::InitializeComponent();
 
-	if (GetWorld() == nullptr)
+	if (GetWorld() == nullptr || bRegisterDevice == false)
 	{
 		return;
 	}

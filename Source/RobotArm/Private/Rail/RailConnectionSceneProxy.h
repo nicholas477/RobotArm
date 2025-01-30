@@ -40,12 +40,16 @@ private:
 	const URailConnectionComponent* RailConnectionComponent;
 
 	void CreateLineBatch(int32 ViewIndex, FMeshElementCollector& Collector) const;
-	void DrawArrow(int32 ViewIndex, FMeshElementCollector& Collector, const FSceneView* View) const;
+	void DrawArrow(int32 ViewIndex, FMeshElementCollector& Collector) const;
 
 	FColor Color;
 	int32 VisualizationSides;
+	bool DrawTransformsAlongPath;
 	TArray<FVector4> ConnectionPoints;
+	TArray<FTransform> Gizmos;
 	bool bDrawArrow;
 
 	void CreateLineData(TArray<FDynamicMeshVertex>& OutVerts);
+
+	void DrawAxisGizmo(int32 ViewIndex, FMeshElementCollector& Collector, const FTransform& Transform, float Size = 8.f) const;
 };

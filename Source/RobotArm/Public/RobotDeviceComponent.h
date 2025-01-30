@@ -48,6 +48,9 @@ public:
 	UPROPERTY(Transient, BlueprintReadOnly, VisibleAnywhere, Category = "Robot Device")
 	FName DeviceName;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Robot Device")
+	bool bRegisterDevice;
+
 	UPROPERTY(BlueprintAssignable, BlueprintReadOnly, Category = "Robot Device")
 	FOnDeviceStart OnDeviceStart;
 

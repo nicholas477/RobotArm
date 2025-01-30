@@ -9,12 +9,14 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialRenderProxy.h"
 
+UE_ENABLE_OPTIMIZATION
 FRailConnectionSceneProxy::FRailConnectionSceneProxy(const URailConnectionComponent* InComponent)
 	: FPrimitiveSceneProxy(InComponent)
 	, VertexFactory(GetScene().GetFeatureLevel(), "FRailConnectionSceneProxy")
 	, RailConnectionComponent(InComponent)
 	, Color(InComponent->VisualizationColor)
 	, VisualizationSides(InComponent->VisualizationSides)
+	, DrawTransformsAlongPath(InComponent->DrawTransformsAlongPath)
 	, bDrawArrow(InComponent->HasAnyCircularConnections() && InComponent->ShowArrow)
 {
 	TArray<FDynamicMeshVertex> OutVerts;
@@ -22,13 +24,16 @@ FRailConnectionSceneProxy::FRailConnectionSceneProxy(const URailConnectionCompon
 
 	for (const FRailConnection& Connection : InComponent->Connections)
 	{
-		if (Connection.ConnectionType == ERailConnectionType::Circular)
+		if (DrawTransformsAlongPath)
 		{
-			for (int i = 0; i < 32; ++i)
+			for (int i = 0; i < VisualizationSides; ++i)
 			{
-				FVector4 Pos = InComponent->GetPosAlongPath(Connection.Connection, i / 32.f);
-				Pos.W = i / 32.f;
-				ConnectionPoints.Add(Pos);
+				//FVector4 Pos = InComponent->GetPosAlongPath(Connection.Connection, i / (float)VisualizationSides);
+				//Pos.W = i / (float)VisualizationSides;
+				//ConnectionPoints.Add(Pos);
+
+				const FTransform Transform = InComponent->GetTransformAlongPath(Connection.Connection, i / (float)VisualizationSides);
+				Gizmos.Add(Transform);
 			}
 		}
 	}
@@ -60,19 +65,17 @@ void FRailConnectionSceneProxy::GetDynamicMeshElements(const TArray<const FScene
 	{
 		if (VisibilityMap & (1 << ViewIndex))
 		{
-			const FSceneView* View = Views[ViewIndex];
-
 			CreateLineBatch(ViewIndex, Collector);
 
 			if (bDrawArrow)
 			{
-				DrawArrow(ViewIndex, Collector, View);
+				DrawArrow(ViewIndex, Collector);
 			}
 
-			//for (const FVector4& ConnectionPoint : ConnectionPoints)
-			//{
-			//	Collector.GetPDI(ViewIndex)->DrawPoint(ConnectionPoint, Color, ConnectionPoint.W * 8.f, SDPG_World);
-			//}
+			for (const FTransform& Transform : Gizmos)
+			{
+				DrawAxisGizmo(ViewIndex, Collector, Transform);
+			}
 		}
 	}
 }
@@ -142,7 +145,7 @@ void FRailConnectionSceneProxy::CreateLineBatch(int32 ViewIndex, FMeshElementCol
 	Collector.AddMesh(ViewIndex, Mesh);
 }
 
-void FRailConnectionSceneProxy::DrawArrow(int32 ViewIndex, FMeshElementCollector& Collector, const FSceneView* View) const
+void FRailConnectionSceneProxy::DrawArrow(int32 ViewIndex, FMeshElementCollector& Collector) const
 {
 	DrawDirectionalArrow(Collector.GetPDI(ViewIndex), GetLocalToWorld(), Color, 50.f, 8.f, SDPG_World);
 }
@@ -198,3 +201,20 @@ void FRailConnectionSceneProxy::CreateLineData(TArray<FDynamicMeshVertex>& OutVe
 		}
 	}
 }
+
+void FRailConnectionSceneProxy::DrawAxisGizmo(int32 ViewIndex, FMeshElementCollector& Collector, const FTransform& Transform, float Size) const
+{
+	FPrimitiveDrawInterface* DrawInterface = Collector.GetPDI(ViewIndex);
+
+	Size = FMath::Abs(Size);
+
+	const FVector Pos = Transform.GetLocation();
+	const FVector XVec = Transform.TransformVector(FVector(Size, 0.f, 0.f));
+	const FVector YVec = Transform.TransformVector(FVector(0.f, Size, 0.f));
+	const FVector ZVec = Transform.TransformVector(FVector(0.f, 0.f, Size));
+
+	DrawInterface->DrawLine(Pos, Pos + XVec, FColor::Red, SDPG_World);
+	DrawInterface->DrawLine(Pos, Pos + YVec, FColor::Green, SDPG_World);
+	DrawInterface->DrawLine(Pos, Pos + ZVec, FColor::Blue, SDPG_World);
+}
+UE_ENABLE_OPTIMIZATION

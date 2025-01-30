@@ -53,6 +53,9 @@ public:
 	// Sets default values for this component's properties
 	URailConnectionComponent();
 		
+	virtual void InitializeComponent() override;
+	virtual void UninitializeComponent() override;
+
 	// Connections to other rail connections
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Rail")
 	TSet<FRailConnection> Connections;
@@ -69,6 +72,12 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Rail", meta=(ClampMin=1))
 	int32 VisualizationSides;
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Rail")
+	bool DrawTransformsAlongPath;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Rail")
+	bool IsStop;
+
 	// Get the positions of each connected component relative to this component
 	TArray<FVector> GetConnectionRelativePositions() const;
 
@@ -76,7 +85,18 @@ public:
 	bool HasAnyCircularConnections() const;
 
 	// Returns the position along the path, in normalized (0-1) time
+	UFUNCTION(BlueprintPure, Category = "Rail")
 	FVector GetPosAlongPath(URailConnectionComponent* Connection, float NormalizedTime) const;
+
+	// Returns the position along the path, in normalized (0-1) time
+	UFUNCTION(BlueprintPure, Category = "Rail")
+	FTransform GetTransformAlongPath(URailConnectionComponent* Connection, float NormalizedTime) const;
+
+	UFUNCTION(BlueprintPure, Category = "Rail")
+	bool GetAngleAlongCurve(URailConnectionComponent* Connection, float NormalizedTime, float& OutAngle) const;
+
+	UFUNCTION(BlueprintPure, Category = "Rail")
+	bool GetPathLength(URailConnectionComponent* Connection, float& OutLength) const;
 
 	//~ Begin UPrimitiveComponent Interface.
 	virtual FPrimitiveSceneProxy* CreateSceneProxy() override;
