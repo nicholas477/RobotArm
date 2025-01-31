@@ -75,6 +75,18 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Rail")
 	bool DrawTransformsAlongPath;
 
+	// Draw an arrow pointing to which connection is currently selected
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Rail")
+	bool DrawCurrentConnectionArrow;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Rail")
+	FVector CurrentConnectionArrowOffset;
+
+	// Which connection this rail connection is currently connected to.
+	// Chooses which path to take when this rail connection is traversed
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Rail")
+	int32 CurrentConnection;
+
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Rail")
 	bool IsStop;
 
@@ -97,6 +109,9 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Rail")
 	bool GetPathLength(URailConnectionComponent* Connection, float& OutLength) const;
+
+	UFUNCTION(BlueprintPure, Category = "Rail")
+	URailConnectionComponent* GetCurrentConnection() const;
 
 	//~ Begin UPrimitiveComponent Interface.
 	virtual FPrimitiveSceneProxy* CreateSceneProxy() override;

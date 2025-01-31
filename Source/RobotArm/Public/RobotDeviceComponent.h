@@ -23,13 +23,13 @@ public:
 	virtual void InitializeComponent() override;
 	virtual void UninitializeComponent() override;
 
-	UFUNCTION(BlueprintCallable, Category = "Robot Device")
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Robot Device")
 	void StartDevice()
 	{
 		OnDeviceStart.Broadcast(this);
 	}
 
-	UFUNCTION(BlueprintCallable, Category = "Robot Device")
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Robot Device")
 	void StopDevice()
 	{
 		OnDeviceStop.Broadcast(this);

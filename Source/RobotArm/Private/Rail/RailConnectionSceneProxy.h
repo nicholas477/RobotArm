@@ -48,6 +48,8 @@ private:
 	TArray<FVector4> ConnectionPoints;
 	TArray<FTransform> Gizmos;
 	bool bDrawArrow;
+	bool bDrawConnection;
+	FTransform ConnectionTransform;
 
 	void CreateLineData(TArray<FDynamicMeshVertex>& OutVerts);
 

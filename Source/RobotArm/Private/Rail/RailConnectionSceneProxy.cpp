@@ -18,6 +18,7 @@ FRailConnectionSceneProxy::FRailConnectionSceneProxy(const URailConnectionCompon
 	, VisualizationSides(InComponent->VisualizationSides)
 	, DrawTransformsAlongPath(InComponent->DrawTransformsAlongPath)
 	, bDrawArrow(InComponent->HasAnyCircularConnections() && InComponent->ShowArrow)
+	, bDrawConnection(InComponent->Connections.Num() > 1)
 {
 	TArray<FDynamicMeshVertex> OutVerts;
 	CreateLineData(OutVerts);
@@ -28,13 +29,24 @@ FRailConnectionSceneProxy::FRailConnectionSceneProxy(const URailConnectionCompon
 		{
 			for (int i = 0; i < VisualizationSides; ++i)
 			{
-				//FVector4 Pos = InComponent->GetPosAlongPath(Connection.Connection, i / (float)VisualizationSides);
-				//Pos.W = i / (float)VisualizationSides;
-				//ConnectionPoints.Add(Pos);
-
 				const FTransform Transform = InComponent->GetTransformAlongPath(Connection.Connection, i / (float)VisualizationSides);
 				Gizmos.Add(Transform);
 			}
+		}
+	}
+
+	if (bDrawConnection)
+	{
+		const URailConnectionComponent* OtherConnection = InComponent->GetCurrentConnection();
+		bDrawConnection = OtherConnection != nullptr;
+		if (OtherConnection)
+		{
+			FVector ConnectionDir = OtherConnection->GetComponentLocation() - InComponent->GetComponentLocation();
+			ConnectionDir.Normalize();
+
+			FVector ConnectionPos = InComponent->GetComponentLocation() + InComponent->GetComponentTransform().TransformVectorNoScale(InComponent->CurrentConnectionArrowOffset);
+
+			ConnectionTransform = FTransform(FRotationMatrix::MakeFromXZ(ConnectionDir, FVector(0.f, 0.f, 1.f)).ToQuat(), ConnectionPos);
 		}
 	}
 	
@@ -75,6 +87,11 @@ void FRailConnectionSceneProxy::GetDynamicMeshElements(const TArray<const FScene
 			for (const FTransform& Transform : Gizmos)
 			{
 				DrawAxisGizmo(ViewIndex, Collector, Transform);
+			}
+
+			if (bDrawConnection)
+			{
+				DrawDirectionalArrow(Collector.GetPDI(ViewIndex), ConnectionTransform.ToMatrixNoScale(), FColor::Green, 50.f, 8.f, SDPG_World);
 			}
 		}
 	}

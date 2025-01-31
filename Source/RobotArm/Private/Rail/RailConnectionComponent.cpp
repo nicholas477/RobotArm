@@ -21,7 +21,10 @@ URailConnectionComponent::URailConnectionComponent()
 	VisualizationColor = FColor::White;
 	VisualizationSides = 32;
 	DrawTransformsAlongPath = false;
+	DrawCurrentConnectionArrow = true;
+	CurrentConnectionArrowOffset = FVector(0.f, 0.f, 32.f);
 	IsStop = false;
+	CurrentConnection = 0;
 }
 
 void URailConnectionComponent::InitializeComponent()
@@ -299,5 +302,19 @@ bool URailConnectionComponent::GetPathLength(URailConnectionComponent* Connectio
 	}
 
 	return false;
+}
+URailConnectionComponent* URailConnectionComponent::GetCurrentConnection() const
+{
+	int32 i = 0;
+	for (const FRailConnection& Connection : Connections)
+	{
+		if (i == CurrentConnection)
+		{
+			return Connection.Connection;
+		}
+
+		i++;
+	}
+	return nullptr;
 }
 UE_ENABLE_OPTIMIZATION
