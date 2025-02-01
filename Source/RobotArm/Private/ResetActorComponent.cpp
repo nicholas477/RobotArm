@@ -49,7 +49,7 @@ void UResetActorComponent::ResetActor_Implementation()
 {
 	if (ResetActorTransform)
 	{
-		GetOwner()->SetActorTransform(ActorTransform);
+		GetOwner()->SetActorTransform(ActorTransform, false, nullptr, ETeleportType::ResetPhysics);
 	}
 
 	OnActorReset.Broadcast(GetOwner(), this, ActorTransform);

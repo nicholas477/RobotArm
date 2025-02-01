@@ -44,7 +44,7 @@ static uint32 GetTypeHash(const FRailConnection& Thing)
 	return Hash;
 }
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent), Config=Game )
 class ROBOTARM_API URailConnectionComponent : public UPrimitiveComponent
 {
 	GENERATED_BODY()
@@ -66,7 +66,7 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Rendering")
 	bool ShowArrow;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Rail")
+	UPROPERTY(Config, BlueprintReadWrite, EditAnywhere, Category = "Rail")
 	FColor VisualizationColor;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Rail", meta=(ClampMin=1))
@@ -79,7 +79,7 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Rail")
 	bool DrawCurrentConnectionArrow;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Rail")
+	UPROPERTY(Config, BlueprintReadWrite, EditAnywhere, Category = "Rail")
 	FVector CurrentConnectionArrowOffset;
 
 	// Which connection this rail connection is currently connected to.

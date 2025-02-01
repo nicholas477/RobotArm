@@ -17,7 +17,8 @@ public class RobotArm : ModuleRules
 			"RobotAsmInterpreter",
 			"Mover",
 			"RHI",
-			"RenderCore"
+			"RenderCore",
+			"UMG"
         });
 	}
 }
