@@ -3,6 +3,7 @@
 #include "SaveGameFunctionLibrary.h"
 
 #include "SaveGameSettings.h"
+#include "SaveGamePlugin.h"
 
 #if WITH_EDITOR
 #include "UObject/Script.h"
@@ -67,6 +68,12 @@ FGuid USaveGameFunctionLibrary::GetPerMapGUID(const UObject* Object)
 
 bool USaveGameFunctionLibrary::WasObjectLoaded(const UObject* Object)
 {
+	if (Object)
+	{
+		FString WasLoaded = Object->HasAnyFlags(RF_WasLoaded | RF_LoadCompleted) ? "True" : "False";
+		UE_LOG(LogSaveGamePlugin, Warning, TEXT("Object: %s was loaded? %s"), *Object->GetName(), *WasLoaded);
+	}
+
 	return Object && Object->HasAnyFlags(RF_WasLoaded | RF_LoadCompleted);
 }
 

@@ -8,9 +8,15 @@
 #include "SaveGameObject.h"
 #include "SaveGameSubsystem.h"
 #include "SaveGameVersion.h"
+#include "SaveGamePlugin.h"
 
 #include "SaveGameSystem.h"
 #include "PlatformFeatures.h"
+
+#if WITH_EDITOR
+#include "Logging/MessageLog.h"
+#include "Misc/UObjectToken.h"
+#endif
 
 #define LEVEL_SUBPATH_PREFIX TEXT("PersistentLevel.")
 
@@ -242,6 +248,17 @@ void TSaveGameSerializer<bIsLoading, bIsTextFormat>::SerializeHeader()
 	}
 }
 
+static void LogSpawnActorError(const FString& ActorName, AActor* ConflictingActor)
+{
+	UE_LOG(LogSaveGamePlugin, Warning, TEXT("Tried to spawn actor: %s, but actor already exists in the map!"), *ActorName);
+
+#if WITH_EDITOR
+	FMessageLog MessageLog("PIE");
+	MessageLog.Error()->AddToken(FUObjectToken::Create(ConflictingActor));
+	MessageLog.Open(EMessageSeverity::Error);
+#endif
+}
+
 template<bool bIsLoading, bool bIsTextFormat>
 void TSaveGameSerializer<bIsLoading, bIsTextFormat>::SerializeActors()
 {
@@ -313,19 +330,26 @@ void TSaveGameSerializer<bIsLoading, bIsTextFormat>::SerializeActors()
 
 					if (SpawnActor)
 					{
-						// This is a spawned actor, let's spawn it
-						FActorSpawnParameters SpawnParameters;
-
-						// If we were handling levels, specify it here
-						SpawnParameters.OverrideLevel = World->GetCurrentLevel();
-						SpawnParameters.Name = *ActorName;
-						SpawnParameters.bNoFail = true;
-
-						Actor = World->SpawnActor(ActorClass, nullptr, nullptr, SpawnParameters);
-
-						if (SpawnID.IsValid() && Actor->Implements<USaveGameSpawnActor>())
+						if (AActor* ConflictingActor = FindObjectFast<AActor>(World->GetCurrentLevel(), *ActorName))
 						{
-							ISaveGameSpawnActor::Execute_SetSpawnID(Actor, SpawnID);
+							LogSpawnActorError(ActorName, ConflictingActor);
+						}
+						else
+						{
+							// This is a spawned actor, let's spawn it
+							FActorSpawnParameters SpawnParameters;
+
+							// If we were handling levels, specify it here
+							SpawnParameters.OverrideLevel = World->GetCurrentLevel();
+							SpawnParameters.Name = *ActorName;
+							SpawnParameters.bNoFail = true;
+
+							Actor = World->SpawnActor(ActorClass, nullptr, nullptr, SpawnParameters);
+
+							if (SpawnID.IsValid() && Actor->Implements<USaveGameSpawnActor>())
+							{
+								ISaveGameSpawnActor::Execute_SetSpawnID(Actor, SpawnID);
+							}
 						}
 					}
 				}
