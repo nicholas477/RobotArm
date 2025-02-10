@@ -23,6 +23,12 @@ public:
 	virtual void InitializeComponent() override;
 	virtual void UninitializeComponent() override;
 
+	UFUNCTION(BlueprintCallable, Category = "Robot Device")
+	void RegisterDevice();
+
+	UFUNCTION(BlueprintCallable, Category = "Robot Device")
+	void UnregisterDevice();
+
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Robot Device")
 	void StartDevice()
 	{

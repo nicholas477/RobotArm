@@ -60,6 +60,7 @@ public:
 
 private:
 	static FString GetSaveName();
+	static FString GetMapName(const UWorld* World);
 	
 	void OnMapLoad(UWorld* World);
 
@@ -71,10 +72,10 @@ private:
 	 * On load, it will also pre-spawn any actors and map any actors with Spawn IDs
 	 * before running the actual serialization step.
 	 */
-	void SerializeActors();
+	void SerializeActors(FStructuredArchive::FSlot& Slot);
 
 	/** Serializes any destroyed level actors. On load, level actors will exist again, so this will re-destroy them */
-	void SerializeDestroyedActors();
+	void SerializeDestroyedActors(FStructuredArchive::FSlot& Slot);
 
 	/**
 	 * Serialized at the end of the archive, the versions are useful for marshaling old data.

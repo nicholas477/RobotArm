@@ -76,8 +76,16 @@ bool TSaveGameSerializer<bIsLoading, bIsTextFormat>::Save()
 	if (ISaveGameSystem* SaveSystem = IPlatformFeaturesModule::Get().GetSaveGameSystem())
 	{
 		SerializeHeader();
-		SerializeActors();
-		SerializeDestroyedActors();
+
+		check(SaveGameSubsystem.IsValid());
+		const UWorld* World = SaveGameSubsystem->GetWorld();
+		FString SerializeMapName = GetMapName(World);
+
+		int32 NumMaps;
+		FStructuredArchiveSlot MapSlot = RootRecord.EnterMap(FArchiveFieldName(L"Levels"), NumMaps).EnterElement(SerializeMapName);
+
+		SerializeActors(MapSlot);
+		SerializeDestroyedActors(MapSlot);
 
 		if (!bIsTextFormat)
 		{
@@ -189,15 +197,25 @@ FString TSaveGameSerializer<bIsLoading, bIsTextFormat>::GetSaveName()
 	return SaveName;
 }
 
+template<bool bIsLoading, bool bIsTextFormat>
+FString TSaveGameSerializer<bIsLoading, bIsTextFormat>::GetMapName(const UWorld* World)
+{
+	return World->GetOutermost()->GetLoadedPath().GetPackageName();
+}
+
 template <bool bIsLoading, bool bIsTextFormat>
 void TSaveGameSerializer<bIsLoading, bIsTextFormat>::OnMapLoad(UWorld* World)
 {
 	FCoreUObjectDelegates::PostLoadMapWithWorld.RemoveAll(this);
 	check(SaveGameSubsystem->GetWorld() == World);
+	FString SerializeMapName = GetMapName(World);
+
+	int32 NumMaps;
+	FStructuredArchiveSlot MapSlot = RootRecord.EnterMap(FArchiveFieldName(L"Levels"), NumMaps).EnterElement(SerializeMapName);
 
 	// Actually serialize the actors
-	SerializeActors();
-	SerializeDestroyedActors();
+	SerializeActors(MapSlot);
+	SerializeDestroyedActors(MapSlot);
 
 	SaveGameSubsystem->OnLoadCompleted();
 	
@@ -254,13 +272,20 @@ static void LogSpawnActorError(const FString& ActorName, AActor* ConflictingActo
 
 #if WITH_EDITOR
 	FMessageLog MessageLog("PIE");
-	MessageLog.Error()->AddToken(FUObjectToken::Create(ConflictingActor));
+
+	FText ErrorText;
+	if (ConflictingActor)
+	{
+		ErrorText = FText::Format(INVTEXT("Save System: Failed to spawn actor {0}"), FText::FromString(ConflictingActor->GetName()));
+	}
+
+	MessageLog.Error()->AddToken(FUObjectToken::Create(ConflictingActor, ErrorText));
 	MessageLog.Open(EMessageSeverity::Error);
 #endif
 }
 
 template<bool bIsLoading, bool bIsTextFormat>
-void TSaveGameSerializer<bIsLoading, bIsTextFormat>::SerializeActors()
+void TSaveGameSerializer<bIsLoading, bIsTextFormat>::SerializeActors(FStructuredArchive::FSlot& Slot)
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_SaveGame_SerializeActors);
 	
@@ -275,6 +300,7 @@ void TSaveGameSerializer<bIsLoading, bIsTextFormat>::SerializeActors()
 	
 	const uint64 ActorsPosition = Archive.Tell();
 	const FArchiveFieldName ActorsFieldName(TEXT("Actors"));
+	const FArchiveFieldName MapsFieldName(TEXT("Levels"));
 	
 	if (bIsLoading)
 	{
@@ -295,7 +321,7 @@ void TSaveGameSerializer<bIsLoading, bIsTextFormat>::SerializeActors()
 			}
 		}
 		
-		FStructuredArchive::FMap ActorMap = RootRecord.EnterMap(ActorsFieldName, NumActors);
+		FStructuredArchive::FMap ActorMap = Slot.EnterAttribute(ActorsFieldName).EnterMap(NumActors);
 
 		Actors.SetNumZeroed(NumActors);
 
@@ -381,7 +407,7 @@ void TSaveGameSerializer<bIsLoading, bIsTextFormat>::SerializeActors()
 			Archive.Seek(ActorsPosition);
 		}
 		
-		FStructuredArchive::FMap ActorMap = RootRecord.EnterMap(ActorsFieldName, NumActors);
+		FStructuredArchive::FMap ActorMap = Slot.EnterAttribute(ActorsFieldName).EnterMap(NumActors);
 
 		auto ActorsIt = SaveGameSubsystem->SaveGameActors.CreateConstIterator();
 		
@@ -424,12 +450,13 @@ void TSaveGameSerializer<bIsLoading, bIsTextFormat>::SerializeActors()
 }
 
 template <bool bIsLoading, bool bIsTextFormat>
-void TSaveGameSerializer<bIsLoading, bIsTextFormat>::SerializeDestroyedActors()
+void TSaveGameSerializer<bIsLoading, bIsTextFormat>::SerializeDestroyedActors(FStructuredArchive::FSlot& Slot)
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_SaveGame_SerializeDestroyedActors);
 	
 	check(SaveGameSubsystem.IsValid());
 	const UWorld* World = SaveGameSubsystem->GetWorld();
+	FString SerializeMapName = GetMapName(World);
 	
 	int32 NumDestroyedActors;
 
@@ -438,7 +465,7 @@ void TSaveGameSerializer<bIsLoading, bIsTextFormat>::SerializeDestroyedActors()
 		NumDestroyedActors = SaveGameSubsystem->DestroyedLevelActors.Num();
 	}
 
-	FStructuredArchive::FArray DestroyedActorsArray = RootRecord.EnterArray(TEXT("DestroyedActors"), NumDestroyedActors);
+	FStructuredArchive::FArray DestroyedActorsArray = Slot.EnterAttribute(TEXT("DestroyedActors")).EnterArray(NumDestroyedActors);
 
 	if (bIsLoading)
 	{

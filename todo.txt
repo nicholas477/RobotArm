@@ -1,0 +1,9 @@
+What the tutorial needs to teach:
+- movement (wasd)
+- use (press e)
+- how to use devices (turn on/off, status?)
+- how to use the robot (moving, programming, states)
+- how to program (reading/writing variables, for loops, moving the robot)
+
+- tutorial level 1:
+move around

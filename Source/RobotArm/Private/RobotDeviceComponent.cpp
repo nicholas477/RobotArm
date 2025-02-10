@@ -25,7 +25,24 @@ void URobotDeviceComponent::InitializeComponent()
 {
 	Super::InitializeComponent();
 
-	if (GetWorld() == nullptr || bRegisterDevice == false)
+	if (bRegisterDevice == false)
+	{
+		return;
+	}
+
+	RegisterDevice();
+}
+
+void URobotDeviceComponent::UninitializeComponent()
+{
+	Super::UninitializeComponent();
+
+	UnregisterDevice();
+}
+
+void URobotDeviceComponent::RegisterDevice()
+{
+	if (GetWorld() == nullptr)
 	{
 		return;
 	}
@@ -37,10 +54,8 @@ void URobotDeviceComponent::InitializeComponent()
 	}
 }
 
-void URobotDeviceComponent::UninitializeComponent()
+void URobotDeviceComponent::UnregisterDevice()
 {
-	Super::UninitializeComponent();
-
 	if (GetWorld() == nullptr)
 	{
 		return;

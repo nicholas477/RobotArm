@@ -19,4 +19,13 @@ class ROBOTARM_API ARobotArmWorldSettings : public AWorldSettings
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Robot Arm")
 	TSubclassOf<UUserWidget> ObjectiveWidget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Robot Arm")
+	bool ShowHud = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Robot Arm")
+	bool ShowDeviceListWidget = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Robot Arm")
+	bool ShowProgrammingWidget = true;
 };
