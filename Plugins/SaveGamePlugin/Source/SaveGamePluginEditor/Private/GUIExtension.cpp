@@ -47,6 +47,7 @@ void FGUIExtension::StartupEditorGUIExtensions()
 
 	UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.LevelEditorToolBar.User");
 	FToolMenuSection& Section = Menu->FindOrAddSection("SavePluginEditor");
+
 	Section.AddSeparator("SavePluginEditorSpacer");
 
 	FToolMenuEntry Entry = FToolMenuEntry::InitComboButton(
@@ -65,28 +66,19 @@ void FGUIExtension::StartupEditorGUIExtensions()
 	Entry.SetCommandList(CommandList);
 
 	Section.AddEntry(Entry);
-
-	//FToolMenuEntry& Entry = Section.AddSubMenu("SavePluginEditorSubmenu", 
-	//	INVTEXT("Save Plugin Settings"), 
-	//	FText(),
-	//	FNewToolMenuDelegate::CreateLambda([this](UToolMenu* InMenu)
-	//	{
-	//		FToolMenuSection& Section = InMenu->AddSection("SavePluginSettings", INVTEXT("Save Plugin Settings"));
-
-	//		Section.AddMenuEntryWithCommandList(MenuToolCommands::Get().SaveSystem_EnableSaving, CommandList);
-	//		Section.AddMenuEntryWithCommandList(MenuToolCommands::Get().SaveSystem_EnableLoading, CommandList);
-	//		Section.AddMenuEntryWithCommandList(MenuToolCommands::Get().SaveSystem_DeleteSave, CommandList);
-	//	}),
-	//	false,
-	//	FSlateIcon(FAppStyle::Get().GetStyleSetName(), TEXT("Icons.Save"))
-	//);
 }
 
 void FGUIExtension::ShutdownEditorGUIExtensions()
 {
 	// Unload editor extension
-	FLevelEditorModule& LevelEditorModule = FModuleManager::Get().LoadModuleChecked<FLevelEditorModule>("LevelEditor");
-	LevelEditorModule.GetAllLevelEditorToolbarPlayMenuExtenders().RemoveAll([&](const FLevelEditorModule::FLevelEditorMenuExtender& Extender) { return Extender.GetHandle() == PlayMenuExtenderHandle; });
+	if (UToolMenus::Get())
+	{
+		UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.LevelEditorToolBar.User");
+		if (Menu)
+		{
+			Menu->RemoveSection("SavePluginEditor");
+		}
+	}
 }
 
 TSharedRef<FExtender> FGUIExtension::OnExtendLevelEditorPlayMenu(const TSharedRef<FUICommandList> inCommandList)
