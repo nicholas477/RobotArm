@@ -70,8 +70,17 @@ bool USaveGameFunctionLibrary::WasObjectLoaded(const UObject* Object)
 {
 	if (Object)
 	{
-		FString WasLoaded = Object->HasAnyFlags(RF_WasLoaded | RF_LoadCompleted) ? "True" : "False";
-		UE_LOG(LogSaveGamePlugin, Warning, TEXT("Object: %s was loaded? %s"), *Object->GetName(), *WasLoaded);
+		bool WasLoaded = Object->HasAnyFlags(RF_WasLoaded | RF_LoadCompleted);
+		UE_LOG(LogSaveGamePlugin, Warning, TEXT("Object: %s was loaded? %s"), *Object->GetName(), WasLoaded ? L"True" : L"False");
+
+		if (WasLoaded)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Test1"));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Test2"));
+		}
 	}
 
 	return Object && Object->HasAnyFlags(RF_WasLoaded | RF_LoadCompleted);

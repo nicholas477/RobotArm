@@ -4,6 +4,7 @@
 
 #include "SaveGameSerializer.h"
 
+#include "SaveGameSettings.h"
 #include "SaveGameFunctionLibrary.h"
 #include "SaveGameObject.h"
 #include "SaveGameSubsystem.h"
@@ -112,10 +113,16 @@ bool TSaveGameSerializer<bIsLoading, bIsTextFormat>::Save()
 			FSaveGameMemoryArchive CompressorArchive(CompressedData);
 			SerializeCompressedData<false>(CompressorArchive, Data);
 
-			return SaveSystem->SaveGame(false, *GetSaveName(), 0, CompressedData);
+			if (GetDefault<USaveGameSettings>()->bEnableSaving)
+			{
+				return SaveSystem->SaveGame(false, *GetSaveName(), 0, CompressedData);
+			}
 		}
 		
-		return SaveSystem->SaveGame(false, *GetSaveName(), 0, Data);
+		if (GetDefault<USaveGameSettings>()->bEnableSaving)
+		{
+			return SaveSystem->SaveGame(false, *GetSaveName(), 0, Data);
+		}
 	}
 
 	return false;
@@ -128,6 +135,12 @@ bool TSaveGameSerializer<bIsLoading, bIsTextFormat>::Load(bool LoadMap)
 
 	TRACE_BOOKMARK(TEXT("Begin: LoadSaveGame[%s]"), bIsTextFormat ? TEXT("Text") : TEXT("Binary"));
 	
+	if (!GetDefault<USaveGameSettings>()->bEnableLoading)
+	{
+		//OnMapLoad(SaveGameSubsystem->GetWorld());
+		return false;
+	}
+
 	TArray<uint8> CompressedData;
 	ISaveGameSystem* SaveSystem = IPlatformFeaturesModule::Get().GetSaveGameSystem();
 	if (SaveSystem && SaveSystem->LoadGame(false, *GetSaveName(), 0, CompressedData))
@@ -280,7 +293,7 @@ static void LogSpawnActorError(const FString& ActorName, AActor* ConflictingActo
 	}
 
 	MessageLog.Error()->AddToken(FUObjectToken::Create(ConflictingActor, ErrorText));
-	MessageLog.Open(EMessageSeverity::Error);
+	//MessageLog.Open(EMessageSeverity::Error);
 #endif
 }
 

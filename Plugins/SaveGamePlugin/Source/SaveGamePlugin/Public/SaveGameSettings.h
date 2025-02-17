@@ -38,6 +38,14 @@ public:
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 
+	// Enable writing out the save to the file
+	UPROPERTY(EditAnywhere, Config, Category = Settings)
+	bool bEnableSaving = true;
+
+	// Enable reading the save from the file
+	UPROPERTY(EditAnywhere, Config, Category = Settings)
+	bool bEnableLoading = true;
+
 protected:
 	/**
 	 * The list of possible versions and their corresponding enums. Must add versions here before
