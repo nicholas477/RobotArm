@@ -42,7 +42,8 @@ FORCEINLINE_DEBUGGABLE void SerializeCompressedData(FArchive& Ar, TArray<uint8>&
 		Data.SetNumUninitialized(UncompressedSize);
 	}
 
-	Ar.SerializeCompressed(Data.GetData(), UncompressedSize, NAME_Zlib);
+	//Ar.SerializeCompressed(Data.GetData(), UncompressedSize, NAME_Zlib);
+	Ar.Serialize(Data.GetData(), UncompressedSize);
 }
 
 template <bool bIsLoading, bool bIsTextFormat>
@@ -78,12 +79,10 @@ bool TSaveGameSerializer<bIsLoading, bIsTextFormat>::Save()
 	{
 		SerializeHeader();
 
+		bool bFoundMapSlot;
 		check(SaveGameSubsystem.IsValid());
 		const UWorld* World = SaveGameSubsystem->GetWorld();
-		FString SerializeMapName = GetMapName(World);
-
-		int32 NumMaps;
-		FStructuredArchiveSlot MapSlot = RootRecord.EnterMap(FArchiveFieldName(L"Levels"), NumMaps).EnterElement(SerializeMapName);
+		FStructuredArchiveSlot MapSlot = EnterMapSlot(World, bFoundMapSlot);
 
 		SerializeActors(MapSlot);
 		SerializeDestroyedActors(MapSlot);
@@ -216,19 +215,65 @@ FString TSaveGameSerializer<bIsLoading, bIsTextFormat>::GetMapName(const UWorld*
 	return World->GetOutermost()->GetLoadedPath().GetPackageName();
 }
 
+template<bool bIsLoading, bool bIsTextFormat>
+FStructuredArchiveSlot TSaveGameSerializer<bIsLoading, bIsTextFormat>::EnterMapSlot(const UWorld* World, bool& FoundMapSlot)
+{
+	FoundMapSlot = false;
+	const FArchiveFieldName LevelsFieldName(TEXT("Levels"));
+
+	int32 NumLevels = -1;
+	FStructuredArchive::FMap LevelMap = RootRecord.EnterMap(LevelsFieldName, NumLevels);
+	const FString SerializeMapName = GetMapName(World);
+
+	if (bIsLoading)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString::Printf(TEXT("Is loading: %s, Num levels in save: %d"), bIsLoading ? L"true" : L"false", NumLevels));
+
+		FString SlotName = SerializeMapName;
+		for (int i = 0; i < NumLevels; ++i)
+		{
+			auto Slot = LevelMap.EnterElement(SlotName);
+			if (SlotName == SerializeMapName || i == (NumLevels - 1))
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, "Is loading: " + FString(bIsLoading ? L"true" : L"false") + ", Map name: " + SlotName);
+				FoundMapSlot = SlotName == SerializeMapName;
+				return Slot;
+			}
+			SlotName = SerializeMapName;
+		}
+
+		FoundMapSlot = false;
+		auto Slot = LevelMap.EnterElement(SlotName);
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, "Is loading: " + FString(bIsLoading ? L"true" : L"false") + ", Map name: " + SlotName);
+		return Slot;
+	}
+	else
+	{
+		FoundMapSlot = true;
+		FString SlotName = SerializeMapName;
+		auto Slot = LevelMap.EnterElement(SlotName);
+
+		UE_LOG(LogTemp, Warning, TEXT("Is loading : false, Map name : %s"), *SlotName);
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, "Is loading: false, Map name: " + SlotName);
+
+		return Slot;
+	}
+}
+
 template <bool bIsLoading, bool bIsTextFormat>
 void TSaveGameSerializer<bIsLoading, bIsTextFormat>::OnMapLoad(UWorld* World)
 {
 	FCoreUObjectDelegates::PostLoadMapWithWorld.RemoveAll(this);
 	check(SaveGameSubsystem->GetWorld() == World);
-	FString SerializeMapName = GetMapName(World);
+	bool bFoundMapSlot;
+	FStructuredArchiveSlot MapSlot = EnterMapSlot(World, bFoundMapSlot);
 
-	int32 NumMaps;
-	FStructuredArchiveSlot MapSlot = RootRecord.EnterMap(FArchiveFieldName(L"Levels"), NumMaps).EnterElement(SerializeMapName);
-
-	// Actually serialize the actors
-	SerializeActors(MapSlot);
-	SerializeDestroyedActors(MapSlot);
+	if (bFoundMapSlot)
+	{
+		// Actually serialize the actors
+		SerializeActors(MapSlot);
+		SerializeDestroyedActors(MapSlot);
+	}
 
 	SaveGameSubsystem->OnLoadCompleted();
 	
@@ -301,6 +346,11 @@ template<bool bIsLoading, bool bIsTextFormat>
 void TSaveGameSerializer<bIsLoading, bIsTextFormat>::SerializeActors(FStructuredArchive::FSlot& Slot)
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_SaveGame_SerializeActors);
+
+	if (true)
+	{
+		return;
+	}
 	
 	// This serialize method assumes that we don't have any streamed/sub levels
 	check(SaveGameSubsystem.IsValid());
@@ -313,7 +363,6 @@ void TSaveGameSerializer<bIsLoading, bIsTextFormat>::SerializeActors(FStructured
 	
 	const uint64 ActorsPosition = Archive.Tell();
 	const FArchiveFieldName ActorsFieldName(TEXT("Actors"));
-	const FArchiveFieldName MapsFieldName(TEXT("Levels"));
 	
 	if (bIsLoading)
 	{

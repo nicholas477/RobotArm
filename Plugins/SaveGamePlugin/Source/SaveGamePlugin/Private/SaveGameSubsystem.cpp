@@ -33,8 +33,12 @@ void USaveGameSubsystem::Deinitialize()
 
 bool USaveGameSubsystem::Save()
 {
-	TSaveGameSerializer<false> BinarySerializer(this);
-	bool bSuccess = BinarySerializer.Save();
+	if (CurrentSerializer == nullptr)
+	{
+		const TSharedRef<TSaveGameSerializer<false>> BinarySerializer = MakeShared<TSaveGameSerializer<false>>(this);
+		CurrentSerializer = BinarySerializer.ToSharedPtr();
+	}
+	bool bSuccess = CurrentSerializer->Save();
 
 #if !UE_BUILD_SHIPPING && WITH_TEXT_ARCHIVE_SUPPORT
 	// This is for debug purposes only, we want to use binary serialization for smallest file sizes
@@ -47,9 +51,13 @@ bool USaveGameSubsystem::Save()
 
 bool USaveGameSubsystem::Load(bool LoadMap)
 {
-	const TSharedRef<TSaveGameSerializer<true>> BinarySerializer = MakeShared<TSaveGameSerializer<true>>(this); 
-	CurrentSerializer = BinarySerializer.ToSharedPtr();
-	return BinarySerializer->Load(LoadMap);
+	if (CurrentSerializer == nullptr)
+	{
+		const TSharedRef<TSaveGameSerializer<true>> BinarySerializer = MakeShared<TSaveGameSerializer<true>>(this);
+		CurrentSerializer = BinarySerializer.ToSharedPtr();
+
+	}
+	return CurrentSerializer->Load(LoadMap);
 }
 
 bool USaveGameSubsystem::IsLoadingSaveGame() const

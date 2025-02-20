@@ -7,3 +7,21 @@ What the tutorial needs to teach:
 
 - tutorial level 1:
 move around
+
+- tutorial level 2:
+use a device (open door)
+
+- tutorial level 3:
+use the devices to put away packages
+
+- computer room
+
+- tutorial level 4:
+teach programming. it should show you how to have to run your program without interfering with devices to finish
+
+- tutorial level 5:
+teach u how to program the robot
+
+What experience do i want to give with the game:
+- feeling of accomplishment from learning and mastering assembly programming
+- feeling of accomplishment from constructing assembly lines with many different processess

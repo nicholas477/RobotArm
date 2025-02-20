@@ -14,6 +14,9 @@ class USaveGameSubsystem;
 class FSaveGameSerializer :  public TSharedFromThis<FSaveGameSerializer>
 {
 public:
+	virtual bool Save() = 0;
+	virtual bool Load(bool LoadMap = false) = 0;
+
 	virtual ~FSaveGameSerializer() = default;
 };
 
@@ -55,12 +58,14 @@ class TSaveGameSerializer final : public FSaveGameSerializer
 public:
 	TSaveGameSerializer(USaveGameSubsystem* InSaveGameSubsystem);
 
-	bool Save();
-	bool Load(bool LoadMap = false);
+	virtual bool Save() override;
+	virtual bool Load(bool LoadMap = false) override;
 
 private:
 	static FString GetSaveName();
 	static FString GetMapName(const UWorld* World);
+
+	FStructuredArchiveSlot EnterMapSlot(const UWorld* World, bool& FoundMapSlot);
 	
 	void OnMapLoad(UWorld* World);
 
