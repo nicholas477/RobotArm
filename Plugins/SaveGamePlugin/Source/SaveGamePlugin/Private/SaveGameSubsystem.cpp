@@ -5,6 +5,7 @@
 #include "SaveGameFunctionLibrary.h"
 #include "SaveGameObject.h"
 #include "SaveGameSerializer.h"
+#include "SaveFile/SaveFileManager.h"
 
 #include "EngineUtils.h"
 
@@ -13,6 +14,12 @@ void USaveGameSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	FWorldDelegates::OnPostWorldInitialization.AddUObject(this, &ThisClass::OnWorldInitialized);
 	FWorldDelegates::OnWorldInitializedActors.AddUObject(this, &ThisClass::OnActorsInitialized);
 	FWorldDelegates::OnWorldCleanup.AddUObject(this, &ThisClass::OnWorldCleanup);
+
+	BinaryFileManager = MakeShared<FSaveFileManager>("SaveGame");
+
+#if !UE_BUILD_SHIPPING && WITH_TEXT_ARCHIVE_SUPPORT
+	JsonFileManager = MakeShared<FSaveFileManager>("SaveGame.json");
+#endif
 
 	// This example doesn't handle streaming levels, but if we did, we'd use a combination of
 	// FWorldDelegates::LevelAddedToWorld and FWorldDelegates::PreLevelRemovedFromWorld
@@ -23,6 +30,12 @@ void USaveGameSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 void USaveGameSubsystem::Deinitialize()
 {
+#if !UE_BUILD_SHIPPING && WITH_TEXT_ARCHIVE_SUPPORT
+	JsonFileManager.Reset();
+#endif
+
+	BinaryFileManager.Reset();
+
 	FWorldDelegates::OnPostWorldInitialization.RemoveAll(this);
 	FWorldDelegates::OnWorldInitializedActors.RemoveAll(this);
 	FWorldDelegates::OnWorldCleanup.RemoveAll(this);
@@ -33,17 +46,19 @@ void USaveGameSubsystem::Deinitialize()
 
 bool USaveGameSubsystem::Save()
 {
-	if (CurrentSerializer == nullptr)
+	//if (CurrentSerializer == nullptr)
 	{
-		const TSharedRef<TSaveGameSerializer<false>> BinarySerializer = MakeShared<TSaveGameSerializer<false>>(this);
+		const TSharedRef<TSaveGameSerializer<false>> BinarySerializer = MakeShared<TSaveGameSerializer<false>>(this, BinaryFileManager);
 		CurrentSerializer = BinarySerializer.ToSharedPtr();
 	}
 	bool bSuccess = CurrentSerializer->Save();
+	bSuccess &= BinaryFileManager->SaveGameFile();
 
 #if !UE_BUILD_SHIPPING && WITH_TEXT_ARCHIVE_SUPPORT
 	// This is for debug purposes only, we want to use binary serialization for smallest file sizes
-	TSaveGameSerializer<false, true> TextSerializer(this);
+	TSaveGameSerializer<false, true> TextSerializer(this, JsonFileManager);
 	bSuccess &= TextSerializer.Save();
+	bSuccess &= JsonFileManager->SaveGameFile();
 #endif
 	
 	return bSuccess;
@@ -51,9 +66,15 @@ bool USaveGameSubsystem::Save()
 
 bool USaveGameSubsystem::Load(bool LoadMap)
 {
-	if (CurrentSerializer == nullptr)
+	BinaryFileManager->LoadGameFile();
+
+#if !UE_BUILD_SHIPPING && WITH_TEXT_ARCHIVE_SUPPORT
+	JsonFileManager->LoadGameFile();
+#endif
+
+	//if (CurrentSerializer == nullptr)
 	{
-		const TSharedRef<TSaveGameSerializer<true>> BinarySerializer = MakeShared<TSaveGameSerializer<true>>(this);
+		const TSharedRef<TSaveGameSerializer<true>> BinarySerializer = MakeShared<TSaveGameSerializer<true>>(this, BinaryFileManager);
 		CurrentSerializer = BinarySerializer.ToSharedPtr();
 
 	}

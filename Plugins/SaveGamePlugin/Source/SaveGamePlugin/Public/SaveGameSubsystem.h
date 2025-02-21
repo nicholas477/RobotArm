@@ -44,4 +44,10 @@ private:
 	
 	TSet<TWeakObjectPtr<AActor>> SaveGameActors;
 	TSet<FSoftObjectPath> DestroyedLevelActors;
+
+	TSharedPtr<class FSaveFileManager> BinaryFileManager;
+
+#if !UE_BUILD_SHIPPING && WITH_TEXT_ARCHIVE_SUPPORT
+	TSharedPtr<class FSaveFileManager> JsonFileManager;
+#endif
 };

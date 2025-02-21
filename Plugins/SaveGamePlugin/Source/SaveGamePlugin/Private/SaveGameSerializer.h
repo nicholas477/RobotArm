@@ -56,13 +56,12 @@ class TSaveGameSerializer final : public FSaveGameSerializer
 		FBinaryArchiveFormatter>::Result;
 	
 public:
-	TSaveGameSerializer(USaveGameSubsystem* InSaveGameSubsystem);
+	TSaveGameSerializer(USaveGameSubsystem* InSaveGameSubsystem, TSharedPtr<class FSaveFileManager> InFileManager);
 
 	virtual bool Save() override;
 	virtual bool Load(bool LoadMap = false) override;
 
 private:
-	static FString GetSaveName();
 	static FString GetMapName(const UWorld* World);
 
 	FStructuredArchiveSlot EnterMapSlot(const UWorld* World, bool& FoundMapSlot);
@@ -105,13 +104,34 @@ private:
 	void SerializeActor(FStructuredArchive::FMap& ActorMap, AActor*& Actor, TFunction<void(const FString&, const FSoftClassPath&, const FGuid&, FStructuredArchive::FSlot&)>&& BodyFunction);
 	
 	const TWeakObjectPtr<USaveGameSubsystem> SaveGameSubsystem;
-	TArray<uint8> Data;
-	FSaveGameMemoryArchive Archive;
-	TSaveGameProxyArchive<bIsLoading> ProxyArchive;
-	FSaveGameFormatter Formatter;
-	FStructuredArchive StructuredArchive;
-	
-	FStructuredArchive::FSlot RootSlot;
+	TSharedPtr<class FSaveFileManager> FileManager;
+
+	struct FArchiver
+	{
+		FArchiver()
+			: Archive(Data)
+			, ProxyArchive(Archive)
+			, Formatter(ProxyArchive)
+			, StructuredArchive(Formatter)
+			, RootSlot(StructuredArchive.Open())
+		{
+			static_cast<FArchive&>(ProxyArchive).SetIsTextFormat(bIsTextFormat);
+		}
+		TArray<uint8> Data;
+		FSaveGameMemoryArchive Archive;
+		TSaveGameProxyArchive<bIsLoading> ProxyArchive;
+		FSaveGameFormatter Formatter;
+		FStructuredArchive StructuredArchive;
+		FStructuredArchive::FSlot RootSlot;
+	};
+	FArchiver RootArchiver;
+
+	struct FMapArchiver : public FArchiver
+	{
+		FName MapFileName;
+	};
+	TUniquePtr<FMapArchiver> MapArchiver;
+
 	FStructuredArchive::FRecord RootRecord;
 
 	FString MapName;
