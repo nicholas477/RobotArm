@@ -136,4 +136,6 @@ private:
 
 	FString MapName;
 	uint64 VersionOffset;
+
+	FString FilenameExtension;
 };

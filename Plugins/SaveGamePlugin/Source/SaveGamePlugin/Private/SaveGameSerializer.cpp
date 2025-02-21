@@ -32,6 +32,8 @@ TSaveGameSerializer<bIsLoading, bIsTextFormat>::TSaveGameSerializer(USaveGameSub
 {
 	// Ensure that we're using the latest save game version
 	RootArchiver.Archive.UsingCustomVersion(FSaveGameVersion::GUID);
+
+	FilenameExtension = bIsTextFormat ? ".json" : ".sav";
 }
 
 template <bool bIsLoading, bool bIsTextFormat>
@@ -74,7 +76,7 @@ bool TSaveGameSerializer<bIsLoading, bIsTextFormat>::Save()
 
 	// Be sure to close this, as you'll be missing closed braces for JSON archives
 	RootArchiver.StructuredArchive.Close();
-	FileManager->GetFileData(FName("Root")) = RootArchiver.Data;
+	FileManager->GetFileData(FName("Root" + FilenameExtension)) = RootArchiver.Data;
 
 	if (MapArchiver)
 	{
@@ -100,7 +102,7 @@ bool TSaveGameSerializer<bIsLoading, bIsTextFormat>::Load(bool LoadMap)
 		return false;
 	}
 
-	RootArchiver.Data = FileManager->GetFileData(FName("Root"));
+	RootArchiver.Data = FileManager->GetFileData(FName("Root" + FilenameExtension));
 
 	SerializeHeader();
 		
@@ -157,7 +159,7 @@ template<bool bIsLoading, bool bIsTextFormat>
 FStructuredArchiveSlot TSaveGameSerializer<bIsLoading, bIsTextFormat>::EnterMapSlot(const UWorld* World, bool& FoundMapSlot)
 {
 	FoundMapSlot = false;
-	const FString SerializeMapName = "Levels" / GetMapName(World);
+	const FString SerializeMapName = "Levels" / GetMapName(World) + FilenameExtension;
 
 	MapArchiver = MakeUnique<FMapArchiver>();
 	MapArchiver->MapFileName = FName(SerializeMapName);
