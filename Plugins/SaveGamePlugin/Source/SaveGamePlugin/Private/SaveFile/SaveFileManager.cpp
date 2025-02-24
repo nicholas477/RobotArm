@@ -100,7 +100,7 @@ FJsonSaveFileManager::FJsonSaveFileManager(const FString& InSaveFileName)
 void FJsonSaveFileManager::ReadData(const TArray<uint8>& File)
 {
 	FileMap.Empty();
-	const FString JsonString = FString(File.Num() / sizeof(UTF8CHAR), (UTF8CHAR*)File.GetData());
+	const FString JsonString = FString(File.Num() / sizeof(TCHAR), (TCHAR*)File.GetData());
 
 	TSharedPtr<FJsonObject> Json = MakeShareable(new FJsonObject);
 	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
@@ -116,7 +116,7 @@ void FJsonSaveFileManager::ReadData(const TArray<uint8>& File)
 				TArray<uint8> FieldData;
 
 				FMemoryWriter Archive(FieldData);
-				TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Archive);
+				TSharedRef<TJsonWriter<UTF8CHAR>> Writer = TJsonWriterFactory<UTF8CHAR>::Create(&Archive);
 				if (FJsonSerializer::Serialize(FieldObject->ToSharedRef(), Writer))
 				{
 					FileMap.Add(FieldName, FieldData);
@@ -131,6 +131,7 @@ void FJsonSaveFileManager::WriteData(TArray<uint8>& Data)
 	TSharedPtr<FJsonObject> OutJsonObject = MakeShareable(new FJsonObject);
 	for (const TPair<FName, TArray<uint8>>& File : FileMap)
 	{
+		// For some reason the structured archive json serializer writes to ANSICHARs instead of TCHARs
 		const FString JsonString = FString(File.Value.Num() / sizeof(UTF8CHAR), (UTF8CHAR*)File.Value.GetData());
 		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
 
