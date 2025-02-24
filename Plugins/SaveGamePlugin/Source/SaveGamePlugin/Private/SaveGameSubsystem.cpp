@@ -18,7 +18,7 @@ void USaveGameSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	BinaryFileManager = MakeShared<FSaveFileManager>("SaveGame");
 
 #if !UE_BUILD_SHIPPING && WITH_TEXT_ARCHIVE_SUPPORT
-	JsonFileManager = MakeShared<FSaveFileManager>("SaveGame.json");
+	JsonFileManager = MakeShared<FJsonSaveFileManager>("SaveGame.json");
 #endif
 
 	// This example doesn't handle streaming levels, but if we did, we'd use a combination of

@@ -9,6 +9,7 @@ class FSaveFileManager : public TSharedFromThis<FSaveFileManager>
 {
 public:
 	FSaveFileManager(const FString& InSaveFileName);
+	virtual ~FSaveFileManager() = default;
 
 	bool SaveGameFile();
 	bool LoadGameFile();
@@ -17,9 +18,18 @@ public:
 	TArray<uint8>& GetFileData(FName FileName);
 
 protected:
-	void ReadData(const TArray<uint8>& File);
-	void WriteData(TArray<uint8>& Data);
+	virtual void ReadData(const TArray<uint8>& File);
+	virtual void WriteData(TArray<uint8>& Data);
 
 	TMap<FName, TArray<uint8>> FileMap;
 	FString SaveFileName;
+};
+
+class FJsonSaveFileManager final : public FSaveFileManager
+{
+public:
+	FJsonSaveFileManager(const FString& InSaveFileName);
+protected:
+	virtual void ReadData(const TArray<uint8>& File);
+	virtual void WriteData(TArray<uint8>& Data);
 };

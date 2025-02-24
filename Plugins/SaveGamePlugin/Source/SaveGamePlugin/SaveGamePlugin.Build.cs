@@ -17,7 +17,8 @@ public class SaveGamePlugin : ModuleRules
 		{
 			"CoreUObject",
 			"Engine",
-			"DeveloperSettings"
+			"DeveloperSettings",
+			"Json"
 		});
 		
 		if (Target.Type == TargetType.Editor)
