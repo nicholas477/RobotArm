@@ -80,6 +80,11 @@ TArray<uint8>& FSaveFileManager::GetFileData(FName FileName)
 	return FileMap.FindOrAdd(FileName);
 }
 
+bool FSaveFileManager::DeleteFile(FName FileName)
+{
+	return FileMap.Remove(FileName) > 0;
+}
+
 void FSaveFileManager::ReadData(const TArray<uint8>& File)
 {
 	FMemoryReader Reader(File);

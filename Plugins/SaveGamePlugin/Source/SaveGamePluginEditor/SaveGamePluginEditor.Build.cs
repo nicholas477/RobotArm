@@ -20,7 +20,8 @@ public class SaveGamePluginEditor : ModuleRules
 		PrivateDependencyModuleNames.AddRange(new string[]
 		{
 			"CoreUObject",
-			"Engine"
+			"Engine",
+			"UnrealEd"
 		});
 	}
 }

@@ -28,4 +28,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Robot Arm")
 	bool ShowProgrammingWidget = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Robot Arm")
+	bool AllowDeviceInteraction = true;
 };

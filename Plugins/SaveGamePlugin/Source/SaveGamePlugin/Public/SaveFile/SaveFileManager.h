@@ -5,7 +5,7 @@
 #include "Templates/SharedPointer.h"
 
 // Manages the file directory inside of a save file
-class FSaveFileManager : public TSharedFromThis<FSaveFileManager>
+class SAVEGAMEPLUGIN_API FSaveFileManager : public TSharedFromThis<FSaveFileManager>
 {
 public:
 	FSaveFileManager(const FString& InSaveFileName);
@@ -16,6 +16,7 @@ public:
 
 	bool FileExists(FName FileName);
 	TArray<uint8>& GetFileData(FName FileName);
+	bool DeleteFile(FName FileName);
 
 protected:
 	virtual void ReadData(const TArray<uint8>& File);
@@ -25,7 +26,7 @@ protected:
 	FString SaveFileName;
 };
 
-class FJsonSaveFileManager final : public FSaveFileManager
+class SAVEGAMEPLUGIN_API FJsonSaveFileManager final : public FSaveFileManager
 {
 public:
 	FJsonSaveFileManager(const FString& InSaveFileName);
