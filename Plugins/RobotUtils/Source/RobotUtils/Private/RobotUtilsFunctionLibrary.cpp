@@ -109,7 +109,7 @@ bool URobotUtilsFunctionLibrary::SolveIK(const FSolveIKOptions& Options, const F
 
 	KDL::ChainFkSolverPos_recursive pos_solver(chain);
 	KDL::ChainIkSolverVel_pinv vel_solver(chain, Options.VelocityEpsilon);
-	
+
 	if (Options.bLimitJoints)
 	{
 		FRobotJointArray MinRotationLimit, MaxRotationLimit;
@@ -119,16 +119,16 @@ bool URobotUtilsFunctionLibrary::SolveIK(const FSolveIKOptions& Options, const F
 		MinRotationLimit.MakeKDLJointArray(KDLMinRotationLimit);
 		MaxRotationLimit.MakeKDLJointArray(KDLMaxRotationLimit);
 
-		KDL::ChainIkSolverPos_NR_JL ik_solver(chain, KDLMinRotationLimit, KDLMaxRotationLimit, pos_solver, vel_solver, Options.MaxIterations, Options.PositionEpsilon);
+		KDL::ChainIkSolverPos_NR_JL IKSolver(chain, KDLMinRotationLimit, KDLMaxRotationLimit, pos_solver, vel_solver, Options.MaxIterations, Options.PositionEpsilon);
 
 		KDL::JntArray q_init(chain.getNrOfJoints());
 		KDL::JntArray solution(chain.getNrOfJoints());
 		KDL::Frame desired_pose;
 		TransformToKDLFrame(DesiredEffectorTransform, desired_pose);
 
-		Result.Result = ik_solver.CartToJnt(q_init, desired_pose, solution);
+		Result.Result = IKSolver.CartToJnt(q_init, desired_pose, solution);
 		Result.JointArray = FRobotJointArray::FromKDLJntArray(solution);
-		Result.ErrorString = UTF8_TO_TCHAR(ik_solver.strError(Result.Result));
+		Result.ErrorString = UTF8_TO_TCHAR(IKSolver.strError(Result.Result));
 
 		if (Result.Result >= 0)
 		{
@@ -141,16 +141,16 @@ bool URobotUtilsFunctionLibrary::SolveIK(const FSolveIKOptions& Options, const F
 	}
 	else
 	{
-		KDL::ChainIkSolverPos_NR ik_solver(chain, pos_solver, vel_solver, Options.MaxIterations, Options.PositionEpsilon);
+		KDL::ChainIkSolverPos_NR IKSolver(chain, pos_solver, vel_solver, Options.MaxIterations, Options.PositionEpsilon);
 
 		KDL::JntArray q_init(chain.getNrOfJoints());
 		KDL::JntArray solution(chain.getNrOfJoints());
 		KDL::Frame desired_pose;
 		TransformToKDLFrame(DesiredEffectorTransform, desired_pose);
 
-		Result.Result = ik_solver.CartToJnt(q_init, desired_pose, solution);
+		Result.Result = IKSolver.CartToJnt(q_init, desired_pose, solution);
 		Result.JointArray = FRobotJointArray::FromKDLJntArray(solution);
-		Result.ErrorString = UTF8_TO_TCHAR(ik_solver.strError(Result.Result));
+		Result.ErrorString = UTF8_TO_TCHAR(IKSolver.strError(Result.Result));
 
 		if (Result.Result >= 0)
 		{
