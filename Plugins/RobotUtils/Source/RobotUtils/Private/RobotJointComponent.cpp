@@ -7,6 +7,7 @@
 #include "Materials/Material.h"
 #include "Materials/MaterialRenderProxy.h"
 
+PRAGMA_DISABLE_OPTIMIZATION
 // Sets default values for this component's properties
 URobotJointComponent::URobotJointComponent(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -14,7 +15,6 @@ URobotJointComponent::URobotJointComponent(const FObjectInitializer& ObjectIniti
 	DrawJoint = false;
 	DrawSize = 16.f;
 	DrawOffset.SetLocation(FVector(0.1f, 0.f, 0.f));
-	Rotation = 0.f;
 	RotationInterpSpeed = 50.f;
 	RotationStopThreshold = 0.1f;
 
@@ -31,6 +31,8 @@ void URobotJointComponent::InitializeComponent()
 	Super::InitializeComponent();
 
 	StartingRelativeTransform = GetRelativeTransform();
+
+	MovementInfo.Acceleration = FMath::DegreesToRadians(RotationInterpSpeed);
 }
 
 bool URobotJointComponent::MakeChain(USceneComponent* ChainTip, FRobotChain& OutChain, TArray<USceneComponent*>& OutJoints) const
@@ -58,7 +60,7 @@ bool URobotJointComponent::GetJointRotations(USceneComponent* ChainTip, FRobotJo
 				continue;
 			}
 
-			Rotations.Rotations.Add(FMath::DegreesToRadians(JointJointComponent->TargetRotation));
+			Rotations.Rotations.Add(JointJointComponent->MovementInfo.CurrentRotation);
 		}
 	}
 
@@ -86,8 +88,11 @@ bool URobotJointComponent::ApplyJointRotations(USceneComponent* ChainTip, const 
 			}
 
 			check(Rotations.Rotations.IsValidIndex(i));
+			/*check(Accelerations.Q.Rotations.IsValidIndex(i));
+			check(Accelerations.QDot.Rotations.IsValidIndex(i));*/
 
 			JointJointComponent->SetTargetRotation(FMath::RadiansToDegrees(Rotations.Rotations[i]));
+			JointJointComponent->MovementInfo.TargetRotation = Rotations.Rotations[i];
 			i++;
 		}
 	}
@@ -125,6 +130,8 @@ bool URobotJointComponent::SolveIK(const FSolveIKOptions& Options, const FRobotC
 			if (URobotJointComponent* CastedJointComponent = Cast<URobotJointComponent>(JointComponent))
 			{
 				CastedJointComponent->SetTargetRotation(FMath::RadiansToDegrees(Result.JointArray.Rotations[i]));
+				CastedJointComponent->MovementInfo.TargetRotation = Result.JointArray.Rotations[i];
+				CastedJointComponent->MovementInfo.TargetVelocity = Result.VelocityJointArray.Rotations[i];
 			}
 		}
 	}
@@ -134,12 +141,12 @@ bool URobotJointComponent::SolveIK(const FSolveIKOptions& Options, const FRobotC
 
 void URobotJointComponent::SetTargetRotation(float InTargetRotation)
 {
-	TargetRotation = InTargetRotation;
+	//MovementInfo.TargetRotation = FMath::RadiansToDegrees(InTargetRotation);
 }
 
 bool URobotJointComponent::IsWithinRotationThreshold() const
 {
-	return FMath::IsNearlyEqual(Rotation, TargetRotation, RotationStopThreshold);
+	return FMath::IsNearlyEqual(MovementInfo.CurrentRotation, MovementInfo.TargetRotation, FMath::DegreesToRadians(RotationStopThreshold));
 }
 
 void URobotJointComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -148,17 +155,22 @@ void URobotJointComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 
 	if (!IsWithinRotationThreshold())
 	{
-		float NewRotationDelta = (FMath::FInterpTo(Rotation, TargetRotation, DeltaTime, RotationInterpSpeed) - Rotation) / DeltaTime;
+		const float RadianInterpSpeed = RotationInterpSpeed;// FMath::DegreesToRadians(RotationInterpSpeed);
+		float NewRotationDelta = (FMath::FInterpTo(MovementInfo.CurrentRotation, MovementInfo.TargetRotation, DeltaTime, RadianInterpSpeed) - MovementInfo.CurrentRotation) / DeltaTime;
 
-		NewRotationDelta = FMath::Clamp(NewRotationDelta, -Joint.MaxSpeed, Joint.MaxSpeed) * DeltaTime;
-		Rotation += NewRotationDelta;
+		const float AbsVelocity = FMath::Abs(MovementInfo.TargetVelocity);
+		NewRotationDelta = FMath::Clamp(NewRotationDelta, -AbsVelocity, AbsVelocity) * DeltaTime;
+
+		const float OldRotation = MovementInfo.CurrentRotation;
+		MovementInfo.CurrentRotation += NewRotationDelta;
+		//MovementInfo = FRobotJointMovementInfo::CalculateMovement(MovementInfo, DeltaTime);
 		
 		// Now update the relative rotation
 		const FVector Axis = URobotUtilsFunctionLibrary::GetJointTypeAxis(Joint.Type);
-		const FQuat NewJointRotation = FQuat(Axis, FMath::DegreesToRadians(Rotation));
+		const FQuat NewJointRotation = FQuat(Axis, MovementInfo.CurrentRotation);
 
 		SetRelativeRotation(NewJointRotation);
-		OnRobotJointRotate.Broadcast(this, DeltaTime, NewRotationDelta);
+		OnRobotJointRotate.Broadcast(this, DeltaTime, FMath::RadiansToDegrees(MovementInfo.CurrentRotation - OldRotation));
 	}
 	else
 	{
@@ -212,6 +224,27 @@ FRobotJointSceneProxy::FRobotJointSceneProxy(const URobotJointComponent* InCompo
 	float Angle = (Joint.MinJointLimit + Joint.MaxJointLimit) * (PI / 360);
 	Angle = FMath::Min(Angle, PI * 2.f);
 	BuildConeVerts(0.f, Angle, DrawSize, 0.f, 32, OutVerts, IndexBuffer.Indices);
+
+	for (FDynamicMeshVertex& Vert : OutVerts)
+	{
+		switch (Joint.Type)
+		{
+		case ERobotJointType::RotX:
+			Vert.Color = FColor::Red;
+			break;
+
+		case ERobotJointType::RotY:
+			Vert.Color = FColor::Green;
+			break;
+
+		case ERobotJointType::RotZ:
+			Vert.Color = FColor::Blue;
+			break;
+
+		default:
+			break;
+		}
+	}
 
 	VertexBuffers.InitFromDynamicVertex(&VertexFactory, OutVerts);
 
@@ -273,9 +306,8 @@ void FRobotJointSceneProxy::GetDynamicMeshElements(const TArray<const FSceneView
 	}
 
 	auto ArrowMaterialRenderProxy = new FColoredMaterialRenderProxy(
-		GEngine->ArrowMaterial->GetRenderProxy(),
-		RenderColor,
-		"GizmoColor"
+		GEngine->LevelColorationUnlitMaterial->GetRenderProxy(),
+		RenderColor
 	);
 
 	Collector.RegisterOneFrameMaterialProxy(ArrowMaterialRenderProxy);
@@ -316,9 +348,10 @@ FPrimitiveViewRelevance FRobotJointSceneProxy::GetViewRelevance(const FSceneView
 	FPrimitiveViewRelevance ViewRelevance;
 	ViewRelevance.bDrawRelevance = IsShown(View);
 	ViewRelevance.bDynamicRelevance = true;
+	ViewRelevance.bRenderInMainPass = ShouldRenderInMainPass();
 	// ideally the TranslucencyRelevance should be filled out by the material, here we do it conservative
 	ViewRelevance.bShadowRelevance = IsShadowCast(View);
-	ViewRelevance.bEditorPrimitiveRelevance = UseEditorCompositing(View);
+	ViewRelevance.bEditorPrimitiveRelevance = true;// UseEditorCompositing(View);
 	ViewRelevance.bVelocityRelevance = DrawsVelocity() && ViewRelevance.bOpaque && ViewRelevance.bRenderInMainPass;
 	return ViewRelevance;
 }
@@ -348,3 +381,33 @@ void FRobotJointSceneProxy::OnTransformChanged(FRHICommandListBase& RHICmdList)
 		}
 	}
 }
+
+// https://www.pmdcorp.com/resources/type/articles/get/mathematics-of-motion-control-profiles-article
+FRobotJointMovementInfo FRobotJointMovementInfo::CalculateMovement(const FRobotJointMovementInfo& InputMovementInfo, float DeltaSeconds)
+{
+	FRobotJointMovementInfo OutMovementInfo = InputMovementInfo;
+	OutMovementInfo.CurrentRotation = InputMovementInfo.CurrentRotation + (InputMovementInfo.TargetVelocity * DeltaSeconds);
+	if (InputMovementInfo.TargetVelocity > 0.f)
+	{
+		OutMovementInfo.CurrentRotation = FMath::Min(OutMovementInfo.CurrentRotation, OutMovementInfo.TargetRotation);
+	}
+	else
+	{
+		OutMovementInfo.CurrentRotation = FMath::Max(OutMovementInfo.CurrentRotation, OutMovementInfo.TargetRotation);
+	}
+
+	//float CurrentAcceleration = InputMovementInfo.Acceleration * FMath::Sign(InputMovementInfo.TargetRotation - InputMovementInfo.CurrentRotation);
+	//if (InputMovementInfo.CurrentRotation >= (InputMovementInfo.TargetVelocity * InputMovementInfo.TargetVelocity) / (2.f * InputMovementInfo.Acceleration))
+	//{
+	//	CurrentAcceleration *= -1.f;
+	//}
+
+	//OutMovementInfo.CurrentRotation = InputMovementInfo.CurrentRotation + (InputMovementInfo.CurrentVelocity * DeltaSeconds);
+	//OutMovementInfo.CurrentVelocity = InputMovementInfo.CurrentVelocity + (CurrentAcceleration * DeltaSeconds);
+
+	//// Clamp to max velocity
+	//OutMovementInfo.CurrentVelocity = FMath::Clamp(OutMovementInfo.CurrentVelocity, -InputMovementInfo.TargetVelocity, InputMovementInfo.TargetVelocity);
+
+	return OutMovementInfo;
+}
+PRAGMA_ENABLE_OPTIMIZATION

@@ -13,6 +13,8 @@ namespace KDL
 	class Segment;
 	class Chain;
 	class JntArray;
+	class Twist;
+	class JntArrayVel;
 }
 
 UENUM(BlueprintType)
@@ -28,6 +30,21 @@ enum class ERobotJointType : uint8
 	TransZ,
 	Fixed,
 	None = Fixed
+};
+
+// Represents the combination of translational velocity and rotational velocity applied at one point.
+// The same as KDL::Twist
+USTRUCT(BlueprintType)
+struct FRobotTwist
+{
+	GENERATED_BODY()
+
+	// Linear velocity
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot|Twist")
+	FVector Velocity;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot|Twist")
+	FVector RotationalVelocity;
 };
 
 USTRUCT(BlueprintType)
@@ -108,6 +125,23 @@ struct FRobotJointArray
 
 	void MakeKDLJointArray(KDL::JntArray& OutArray) const;
 	static FRobotJointArray FromKDLJntArray(const KDL::JntArray& Array);
+};
+
+USTRUCT(BlueprintType)
+struct FRobotJointVelocityArray
+{
+	GENERATED_BODY()
+
+	// Velocity
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot|Joint Array")
+	FRobotJointArray Q;
+
+	// Acceleration
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot|Joint Array")
+	FRobotJointArray QDot;
+
+	void MakeKDLJointVelocityArray(KDL::JntArrayVel& OutArray) const;
+	static FRobotJointVelocityArray FromKDLJntVelocityArray(const KDL::JntArrayVel& Array);
 };
 
 USTRUCT(BlueprintType)

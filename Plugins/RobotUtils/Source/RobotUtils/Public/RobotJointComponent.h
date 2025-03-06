@@ -9,6 +9,29 @@
 #include "RobotUtilsFunctionLibrary.h"
 #include "RobotJointComponent.generated.h"
 
+USTRUCT(BlueprintType)
+struct FRobotJointMovementInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(Transient, BlueprintReadOnly, VisibleAnywhere, Category = "Joint Component", meta = (Units = "Radians"))
+	float CurrentRotation;
+
+	UPROPERTY(Transient, BlueprintReadOnly, VisibleAnywhere, Category = "Joint Component", meta = (Units = "RadiansPerSecond"))
+	float CurrentVelocity;
+
+	UPROPERTY(Transient, BlueprintReadOnly, VisibleAnywhere, Category = "Joint Component", meta = (Units = "Radians"))
+	float TargetRotation;
+
+	UPROPERTY(Transient, BlueprintReadOnly, VisibleAnywhere, Category = "Joint Component", meta = (Units = "RadiansPerSecond"))
+	float TargetVelocity;
+
+	UPROPERTY(Transient, BlueprintReadOnly, VisibleAnywhere, Category = "Joint Component", meta = (Units = "RadiansPerSecond"))
+	float Acceleration;
+
+	static FRobotJointMovementInfo CalculateMovement(const FRobotJointMovementInfo& InputMovementInfo, float DeltaSeconds);
+};
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnRobotJointRotate, URobotJointComponent*, Joint, float, DeltaSeconds, float, RotationDelta);
 
 UCLASS( ClassGroup=(Robot), meta=(BlueprintSpawnableComponent) )
@@ -40,14 +63,11 @@ public:
 	UPROPERTY(Transient)
 	FTransform StartingRelativeTransform;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Joint Component", meta = (Units = "Degrees"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Joint Component", meta = (Units = "DegreesPerSecond"))
 	float RotationInterpSpeed;
 
-	UPROPERTY(Transient, BlueprintReadOnly, VisibleAnywhere, Category = "Joint Component", meta = (Units = "Degrees"))
-	float Rotation;
-
-	UPROPERTY(Transient, BlueprintReadOnly, VisibleAnywhere, Category = "Joint Component", meta = (Units = "Degrees"))
-	float TargetRotation;
+	UPROPERTY(Transient, BlueprintReadOnly, VisibleAnywhere, Category = "Joint Component")
+	FRobotJointMovementInfo MovementInfo;
 
 	// How close Rotation is to TargetRotation when this joint decides to stop rotating
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Joint Component", meta = (Units = "Degrees"))

@@ -67,6 +67,7 @@ FRobotSegment FRobotSegment::FromKDLSegment(const KDL::Segment& Segment)
 
 void FRobotChain::GetJointMinMaxRotations(FRobotJointArray& MinRotations, FRobotJointArray& MaxRotations) const
 {
+	checkNoEntry();
 }
 
 void FRobotChain::MakeKDLChain(KDL::Chain& OutChain) const
@@ -108,7 +109,6 @@ void FRobotJointArray::MakeKDLJointArray(KDL::JntArray& OutArray) const
 
 FRobotJointArray FRobotJointArray::FromKDLJntArray(const KDL::JntArray& Array)
 {
-	//UE_LOG(LogTemp, Warning, TEXT("KDL:  FRobotJointArray::FromKDLJntArray(const KDL::JntArray& Array)"));
 	FRobotJointArray OutArray;
 
 	for (unsigned int i = 0; i < Array.rows(); ++i)
@@ -116,5 +116,19 @@ FRobotJointArray FRobotJointArray::FromKDLJntArray(const KDL::JntArray& Array)
 		OutArray.Rotations.Add(Array(i));
 	}
 
+	return OutArray;
+}
+
+void FRobotJointVelocityArray::MakeKDLJointVelocityArray(KDL::JntArrayVel& OutArray) const
+{
+	Q.MakeKDLJointArray(OutArray.q);
+	QDot.MakeKDLJointArray(OutArray.qdot);
+}
+
+FRobotJointVelocityArray FRobotJointVelocityArray::FromKDLJntVelocityArray(const KDL::JntArrayVel& Array)
+{
+	FRobotJointVelocityArray OutArray;
+	OutArray.Q = FRobotJointArray::FromKDLJntArray(Array.q);
+	OutArray.QDot = FRobotJointArray::FromKDLJntArray(Array.qdot);
 	return OutArray;
 }

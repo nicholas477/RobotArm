@@ -7,6 +7,21 @@
 #include "RobotUtilsTypes.h"
 #include "RobotUtilsFunctionLibrary.generated.h"
 
+// Inverse velocity kinematics solver options
+// 
+// Inverse kinematics is specifying a position and inversely solving joint rotations to match that position,
+// so inverse velocity kinematics is specifying an end effector velocity and solving joint rotational velocities
+// to match that end effector velocity
+USTRUCT(BlueprintType)
+struct FSolveIVKOptions
+{
+	GENERATED_BODY()
+
+	// Target velocity of the end effector
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot|IVK Options")
+	FRobotTwist TargetTwist;
+};
+
 USTRUCT(BlueprintType)
 struct FSolveIKOptions
 {
@@ -18,13 +33,19 @@ struct FSolveIKOptions
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot|IK Options")
 	double PositionEpsilon = 0.01;
-
+		
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot|IK Options")
 	double VelocityEpsilon = 0.01;
 
 	// Read the rotation limits from the joints and limit the IK rotations
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot|IK Options")
 	bool bLimitJoints = true;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot|IK Options")
+	FRobotJointArray InitialRotations;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot|IK Options")
+	FSolveIVKOptions IVKOptions;
 };
 
 USTRUCT(BlueprintType)
@@ -38,12 +59,22 @@ struct FSolveIKResult
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot|IK Result")
 	FRobotJointArray JointArray;
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot|IK Result")
+	FRobotJointArray VelocityJointArray;
+
 	// The result returned from the IK solver
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot|IK Result")
 	int32 Result;
 
+	// The result returned from the IK velocity solver
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot|IK Result")
+	int32 VelocityResult;
+
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot|IK Result")
 	FString ErrorString;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot|IK Result")
+	FString VelocityErrorString;
 };
 
 /**
@@ -79,9 +110,16 @@ public:
 	static void VectorToKDLVector(const FVector& Vector, KDL::Vector& OutVector);
 	static FVector KDLVectorToVector(const KDL::Vector& Vector);
 
+	static void TwistToKDLTwist(const FRobotTwist& Twist, KDL::Twist& OutTwist);
+	static FRobotTwist KDLTwistToTwist(const KDL::Twist& Twist);
+
 	UFUNCTION(BlueprintPure, Category = "Robot Utils|Chain")
 	static TArray<FRobotJoint> GetJointsFromChain(const FRobotChain& Chain, bool bIncludeFixed = false);
 
 	UFUNCTION(BlueprintPure, Category = "Robot Utils|Chain")
 	static void GetJointLimitsFromChain(const FRobotChain& Chain, FRobotJointArray& OutMin, FRobotJointArray& OutMax);
+
+	// Removes all non-robot joint components and also all fixed robot joint components.
+	UFUNCTION(BlueprintPure, Category = "Robot Utils|Chain")
+	static TArray<USceneComponent*> GetMoveableJointsFromChain(const TArray<USceneComponent*>& Chain);
 };

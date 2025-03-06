@@ -110,6 +110,19 @@ bool URobotUtilsFunctionLibrary::SolveIK(const FSolveIKOptions& Options, const F
 	KDL::ChainFkSolverPos_recursive pos_solver(chain);
 	KDL::ChainIkSolverVel_pinv vel_solver(chain, Options.VelocityEpsilon);
 
+	KDL::JntArray q_init(chain.getNrOfJoints());
+	if (chain.getNrOfJoints() == Options.InitialRotations.Rotations.Num())
+	{
+		for (int32 i = 0; i < Options.InitialRotations.Rotations.Num(); ++i)
+		{
+			q_init(i) = Options.InitialRotations.Rotations[i];
+		}
+	}
+
+	KDL::JntArray solution(chain.getNrOfJoints());
+	KDL::Frame desired_pose;
+	TransformToKDLFrame(DesiredEffectorTransform, desired_pose);
+
 	if (Options.bLimitJoints)
 	{
 		FRobotJointArray MinRotationLimit, MaxRotationLimit;
@@ -121,46 +134,35 @@ bool URobotUtilsFunctionLibrary::SolveIK(const FSolveIKOptions& Options, const F
 
 		KDL::ChainIkSolverPos_NR_JL IKSolver(chain, KDLMinRotationLimit, KDLMaxRotationLimit, pos_solver, vel_solver, Options.MaxIterations, Options.PositionEpsilon);
 
-		KDL::JntArray q_init(chain.getNrOfJoints());
-		KDL::JntArray solution(chain.getNrOfJoints());
-		KDL::Frame desired_pose;
-		TransformToKDLFrame(DesiredEffectorTransform, desired_pose);
-
 		Result.Result = IKSolver.CartToJnt(q_init, desired_pose, solution);
-		Result.JointArray = FRobotJointArray::FromKDLJntArray(solution);
 		Result.ErrorString = UTF8_TO_TCHAR(IKSolver.strError(Result.Result));
-
-		if (Result.Result >= 0)
-		{
-			Result.bWasSuccessful = true;
-			return true;
-		}
-
-		Result.bWasSuccessful = false;
-		return false;
 	}
 	else
 	{
 		KDL::ChainIkSolverPos_NR IKSolver(chain, pos_solver, vel_solver, Options.MaxIterations, Options.PositionEpsilon);
 
-		KDL::JntArray q_init(chain.getNrOfJoints());
-		KDL::JntArray solution(chain.getNrOfJoints());
-		KDL::Frame desired_pose;
-		TransformToKDLFrame(DesiredEffectorTransform, desired_pose);
-
 		Result.Result = IKSolver.CartToJnt(q_init, desired_pose, solution);
-		Result.JointArray = FRobotJointArray::FromKDLJntArray(solution);
 		Result.ErrorString = UTF8_TO_TCHAR(IKSolver.strError(Result.Result));
-
-		if (Result.Result >= 0)
-		{
-			Result.bWasSuccessful = true;
-			return true;
-		}
-
-		Result.bWasSuccessful = false;
-		return false;
 	}
+
+	Result.JointArray = FRobotJointArray::FromKDLJntArray(solution);
+
+	KDL::Twist TargetTwist;
+	TwistToKDLTwist(Options.IVKOptions.TargetTwist, TargetTwist);
+
+	KDL::JntArray vel_arr(chain.getNrOfJoints());
+	Result.VelocityResult = vel_solver.CartToJnt(q_init, TargetTwist, vel_arr);
+	Result.VelocityErrorString = UTF8_TO_TCHAR(vel_solver.strError(Result.VelocityResult));
+	Result.VelocityJointArray = FRobotJointArray::FromKDLJntArray(vel_arr);
+
+	if (Result.Result >= 0 && Result.VelocityResult >= 0)
+	{
+		Result.bWasSuccessful = true;
+		return true;
+	}
+
+	Result.bWasSuccessful = false;
+	return false;
 }
 
 TArray<FRotator> URobotUtilsFunctionLibrary::GetJointRotations(const FRobotChain& Chain, const FRobotJointArray& JointArray)
@@ -231,6 +233,17 @@ FVector URobotUtilsFunctionLibrary::KDLVectorToVector(const KDL::Vector& Vector)
 	return FVector(Vector.x(), Vector.y(), Vector.z());
 }
 
+void URobotUtilsFunctionLibrary::TwistToKDLTwist(const FRobotTwist& Twist, KDL::Twist& OutTwist)
+{
+	VectorToKDLVector(Twist.Velocity, OutTwist.vel);
+	VectorToKDLVector(Twist.RotationalVelocity, OutTwist.rot);
+}
+
+FRobotTwist URobotUtilsFunctionLibrary::KDLTwistToTwist(const KDL::Twist& Twist)
+{
+	return FRobotTwist{ KDLVectorToVector(Twist.vel), KDLVectorToVector(Twist.rot) };
+}
+
 TArray<FRobotJoint> URobotUtilsFunctionLibrary::GetJointsFromChain(const FRobotChain& Chain, bool bIncludeFixed)
 {
 	TArray<FRobotJoint> Joints;
@@ -259,4 +272,22 @@ void URobotUtilsFunctionLibrary::GetJointLimitsFromChain(const FRobotChain& Chai
 			OutMax.Rotations.Add(FMath::DegreesToRadians(Segment.Joint.MaxJointLimit));
 		}
 	}
+}
+
+TArray<USceneComponent*> URobotUtilsFunctionLibrary::GetMoveableJointsFromChain(const TArray<USceneComponent*>& Chain)
+{
+	TArray<USceneComponent*> OutComponents = Chain;
+	OutComponents.RemoveAll([](USceneComponent* Component)
+	{
+		URobotJointComponent* JointComponent = Cast<URobotJointComponent>(Component);
+		if (JointComponent)
+		{
+			return JointComponent->Joint.Type == ERobotJointType::Fixed;
+		}
+		else
+		{
+			return true;
+		}
+	});
+	return OutComponents;
 }
