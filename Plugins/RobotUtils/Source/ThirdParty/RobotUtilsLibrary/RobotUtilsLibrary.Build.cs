@@ -34,7 +34,7 @@ public class RobotUtilsLibrary : ModuleRules
             PublicDelayLoadDLLs.Add("liborocos-kdl.so ");
 
             // Ensure that the DLL is staged along with the executable
-            RuntimeDependencies.Add("$(PluginDir)/Binaries/ThirdParty/liborocos-kdl.so ");
+            RuntimeDependencies.Add("$(PluginDir)/Binaries/ThirdParty/liborocos-kdl.so");
         }
 	}
 }
