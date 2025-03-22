@@ -31,7 +31,7 @@ public class RobotUtilsLibrary : ModuleRules
             PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "orocos_kdl", "lib", "liborocos-kdl.so"));
 
             // Delay-load the DLL, so we can load it from the right place first
-            PublicDelayLoadDLLs.Add("liborocos-kdl.so ");
+            PublicDelayLoadDLLs.Add("liborocos-kdl.so");
 
             // Ensure that the DLL is staged along with the executable
             RuntimeDependencies.Add("$(PluginDir)/Binaries/ThirdParty/liborocos-kdl.so");

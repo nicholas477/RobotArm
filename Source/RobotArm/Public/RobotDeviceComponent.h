@@ -10,7 +10,6 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDeviceStart, URobotDeviceComponen
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDeviceStop, URobotDeviceComponent*, Device);
 DECLARE_DYNAMIC_DELEGATE_RetVal_OneParam(TArray<int32>, FGetDeviceStatus, URobotDeviceComponent*, Device);
 
-
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ROBOTARM_API URobotDeviceComponent : public UActorComponent
 {
