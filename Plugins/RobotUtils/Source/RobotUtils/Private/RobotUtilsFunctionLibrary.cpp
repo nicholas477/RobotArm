@@ -3,11 +3,14 @@
 
 #include "RobotUtilsFunctionLibrary.h"
 
+#include "RobotUtils.h"
 #include "RobotUtilsKDL.h"
 #include "DrawDebugHelpers.h"
 #include "RobotJointComponent.h"
 #include "Algo/Reverse.h"
+#include "Async/Async.h"
 
+UE_DISABLE_OPTIMIZATION
 bool URobotUtilsFunctionLibrary::GetJointRotation(const FRobotJoint& Joint, const FRobotJointArray& JointArray, int32 Index, FRotator& OutRotator)
 {
 	if (Index >= JointArray.Rotations.Num())
@@ -104,6 +107,9 @@ void URobotUtilsFunctionLibrary::DebugDrawChain(const UObject* WorldContextObjec
 
 bool URobotUtilsFunctionLibrary::SolveIK(const FSolveIKOptions& Options, const FRobotChain& Chain, const FTransform& DesiredEffectorTransform, FSolveIKResult& Result)
 {
+	SCOPED_NAMED_EVENT(URobotUtilsFunctionLibrary_SolveIK, FColor::Green);
+	DECLARE_SCOPE_CYCLE_COUNTER(TEXT("URobotUtilsFunctionLibrary::SolveIK"), STAT_RobotUtils_SolveIK, STATGROUP_RobotUtils);
+
 	KDL::Chain chain;
 	Chain.MakeKDLChain(chain);
 
@@ -134,6 +140,8 @@ bool URobotUtilsFunctionLibrary::SolveIK(const FSolveIKOptions& Options, const F
 
 		KDL::ChainIkSolverPos_NR_JL IKSolver(chain, KDLMinRotationLimit, KDLMaxRotationLimit, pos_solver, vel_solver, Options.MaxIterations, Options.PositionEpsilon);
 
+		SCOPED_NAMED_EVENT(URobotUtilsFunctionLibrary_SolveIK_IK_CartToJnt, FColor::Green);
+		DECLARE_SCOPE_CYCLE_COUNTER(TEXT("URobotUtilsFunctionLibrary::SolveIK IK::CartToJnt"), STAT_RobotUtils_SolveIK_IK_CartToJnt, STATGROUP_RobotUtils);
 		Result.Result = IKSolver.CartToJnt(q_init, desired_pose, solution);
 		Result.ErrorString = UTF8_TO_TCHAR(IKSolver.strError(Result.Result));
 	}
@@ -141,6 +149,8 @@ bool URobotUtilsFunctionLibrary::SolveIK(const FSolveIKOptions& Options, const F
 	{
 		KDL::ChainIkSolverPos_NR IKSolver(chain, pos_solver, vel_solver, Options.MaxIterations, Options.PositionEpsilon);
 
+		SCOPED_NAMED_EVENT(URobotUtilsFunctionLibrary_SolveIK_IK_CartToJnt, FColor::Green);
+		DECLARE_SCOPE_CYCLE_COUNTER(TEXT("URobotUtilsFunctionLibrary::SolveIK IK::CartToJnt"), STAT_RobotUtils_SolveIK_IK_CartToJnt, STATGROUP_RobotUtils);
 		Result.Result = IKSolver.CartToJnt(q_init, desired_pose, solution);
 		Result.ErrorString = UTF8_TO_TCHAR(IKSolver.strError(Result.Result));
 	}
@@ -151,7 +161,13 @@ bool URobotUtilsFunctionLibrary::SolveIK(const FSolveIKOptions& Options, const F
 	TwistToKDLTwist(Options.IVKOptions.TargetTwist, TargetTwist);
 
 	KDL::JntArray vel_arr(chain.getNrOfJoints());
-	Result.VelocityResult = vel_solver.CartToJnt(q_init, TargetTwist, vel_arr);
+
+	{
+		SCOPED_NAMED_EVENT(URobotUtilsFunctionLibrary_SolveIK_Vel_CartToJnt, FColor::Green);
+		DECLARE_SCOPE_CYCLE_COUNTER(TEXT("URobotUtilsFunctionLibrary::SolveIK Vel::CartToJnt"), STAT_RobotUtils_SolveIK_Vel_CartToJnt, STATGROUP_RobotUtils);
+		Result.VelocityResult = vel_solver.CartToJnt(q_init, TargetTwist, vel_arr);
+	}
+
 	Result.VelocityErrorString = UTF8_TO_TCHAR(vel_solver.strError(Result.VelocityResult));
 	Result.VelocityJointArray = FRobotJointArray::FromKDLJntArray(vel_arr);
 
@@ -167,6 +183,7 @@ bool URobotUtilsFunctionLibrary::SolveIK(const FSolveIKOptions& Options, const F
 
 TArray<FRotator> URobotUtilsFunctionLibrary::GetJointRotations(const FRobotChain& Chain, const FRobotJointArray& JointArray)
 {
+	SCOPED_NAMED_EVENT(URobotUtilsFunctionLibrary_GetJointRotations, FColor::Green);
 	TArray<FRotator> Rotations;
 	KDL::Chain chain;
 	Chain.MakeKDLChain(chain);
@@ -291,3 +308,10 @@ TArray<USceneComponent*> URobotUtilsFunctionLibrary::GetMoveableJointsFromChain(
 	});
 	return OutComponents;
 }
+
+FSolveIVKOptions::FSolveIVKOptions()
+{
+	TargetTwist.Velocity = FVector(100.f);
+	TargetTwist.RotationalVelocity = FVector(3.14159f);
+}
+UE_ENABLE_OPTIMIZATION

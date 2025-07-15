@@ -92,3 +92,4 @@ PDF/*.toc
 PDF/*.pdf
 PDF/*.aux
 RobotArm.unrealvs
+Plugins/ScreenSpaceFogScattering

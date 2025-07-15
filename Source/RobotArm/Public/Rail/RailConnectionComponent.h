@@ -44,7 +44,7 @@ static uint32 GetTypeHash(const FRailConnection& Thing)
 	return Hash;
 }
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent), Config=Game )
+UCLASS( ClassGroup=(Rail), meta=(BlueprintSpawnableComponent), Config=Game )
 class ROBOTARM_API URailConnectionComponent : public UPrimitiveComponent
 {
 	GENERATED_BODY()

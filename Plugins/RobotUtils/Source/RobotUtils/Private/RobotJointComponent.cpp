@@ -7,7 +7,6 @@
 #include "Materials/Material.h"
 #include "Materials/MaterialRenderProxy.h"
 
-PRAGMA_DISABLE_OPTIMIZATION
 // Sets default values for this component's properties
 URobotJointComponent::URobotJointComponent(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -102,6 +101,8 @@ bool URobotJointComponent::ApplyJointRotations(USceneComponent* ChainTip, const 
 
 bool URobotJointComponent::SolveIK(const FSolveIKOptions& Options, const FRobotChain& Chain, TArray<USceneComponent*> Joints, const FTransform& DesiredEffectorTransform, FSolveIKResult& Result, bool bApplyIK)
 {
+	SCOPED_NAMED_EVENT(URobotJointComponent_SolveIK, FColor::Green);
+
 	if (URobotUtilsFunctionLibrary::SolveIK(Options, Chain, DesiredEffectorTransform, Result) == false)
 	{
 		return false;
@@ -410,4 +411,3 @@ FRobotJointMovementInfo FRobotJointMovementInfo::CalculateMovement(const FRobotJ
 
 	return OutMovementInfo;
 }
-PRAGMA_ENABLE_OPTIMIZATION

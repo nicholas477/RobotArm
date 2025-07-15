@@ -17,6 +17,8 @@ struct FSolveIVKOptions
 {
 	GENERATED_BODY()
 
+	FSolveIVKOptions();
+
 	// Target velocity of the end effector
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Robot|IVK Options")
 	FRobotTwist TargetTwist;

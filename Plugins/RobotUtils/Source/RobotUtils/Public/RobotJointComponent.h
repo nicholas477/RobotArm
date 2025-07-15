@@ -34,7 +34,7 @@ struct FRobotJointMovementInfo
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnRobotJointRotate, URobotJointComponent*, Joint, float, DeltaSeconds, float, RotationDelta);
 
-UCLASS( ClassGroup=(Robot), meta=(BlueprintSpawnableComponent) )
+UCLASS( ClassGroup=(Robot), meta=(BlueprintSpawnableComponent), HideCategories = (Physics, Collision, Lighting, HLOD, Navigation, LOD, TextureStreaming, Mobile, RayTracing))
 class ROBOTUTILS_API URobotJointComponent : public UPrimitiveComponent
 {
 	GENERATED_BODY()

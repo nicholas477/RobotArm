@@ -6,6 +6,8 @@
 
 DECLARE_LOG_CATEGORY_EXTERN(LogRobotUtils, Log, All);
 
+DECLARE_STATS_GROUP(TEXT("RobotUtils"), STATGROUP_RobotUtils, STATCAT_Advanced);
+
 class FRobotUtilsModule : public IModuleInterface
 {
 public:
