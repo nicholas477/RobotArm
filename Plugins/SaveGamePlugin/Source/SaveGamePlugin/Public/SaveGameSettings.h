@@ -18,7 +18,7 @@ public:
 	{}
 
 	/** A unique ID for this version, used by the Custom Version Container in a save game archive. Do not change! */
-	UPROPERTY(VisibleAnywhere, AdvancedDisplay)
+	UPROPERTY(VisibleAnywhere, AdvancedDisplay, meta = (IgnoreForMemberInitializationTest))
 	FGuid ID;
 
 	/** The enum to use for versioning. System will use last value as the "latest version" number. Do not change! */

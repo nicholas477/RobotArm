@@ -6,7 +6,15 @@
 
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "Serialization/StructuredArchive.h"
 #include "SaveGameFunctionLibrary.generated.h"
+
+#define SAVEGAME_SERIALIZE(Archive, Object, Item) \
+Archive.SerializeField(#Item, [&](FStructuredArchive::FSlot Slot) \
+{ \
+	const FProperty* Property = Object->GetClass()->FindPropertyByName(#Item); \
+	Property->SerializeItem(Slot, &Object->Item, nullptr); \
+}); 
 
 UCLASS()
 class SAVEGAMEPLUGIN_API USaveGameFunctionLibrary : public UBlueprintFunctionLibrary

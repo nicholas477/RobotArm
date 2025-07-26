@@ -102,6 +102,11 @@ private:
 	 * @param BodyFunction A lambda function that will optionally do some work, whether that be serializing or spawning
 	 */
 	void SerializeActor(FStructuredArchive::FMap& ActorMap, AActor*& Actor, TFunction<void(const FString&, const FSoftClassPath&, const FGuid&, FStructuredArchive::FSlot&)>&& BodyFunction);
+
+	/** Serializes an actor's components into the actor slot. Matches components by name */
+	void SerializeActorComponents(FStructuredArchive::FSlot& ActorSlot, AActor* Actor);
+
+	void SerializeComponent(FStructuredArchive::FSlot& ComponentSlot, UActorComponent* Component);
 	
 	const TWeakObjectPtr<USaveGameSubsystem> SaveGameSubsystem;
 	TSharedPtr<class FSaveFileManager> FileManager;

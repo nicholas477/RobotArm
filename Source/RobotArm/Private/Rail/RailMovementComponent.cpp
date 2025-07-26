@@ -89,7 +89,7 @@ void URailMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 				CurrentConnection = GetWorld()->GetSubsystem<URailWorldSubsystem>()->GetAdjacentConnection(GetCurrentConnectionEnd());
 				CurrentLocationOnRail = CurrentLocationOnRail / GetCurrentConnectionLength();
 			}
-			UpdateLocationOnRail();
+			UpdateLocationOnRail(true);
 		}
 	}
 }

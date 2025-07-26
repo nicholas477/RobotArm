@@ -141,9 +141,15 @@ void FJsonSaveFileManager::WriteData(TArray<uint8>& Data)
 		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
 
 		TSharedPtr<FJsonObject> JsonFileObject;
-		if (FJsonSerializer::Deserialize(Reader, JsonFileObject))
+		if (ensure(FJsonSerializer::Deserialize(Reader, JsonFileObject)))
 		{
 			OutJsonObject->SetObjectField(File.Key.ToString(), JsonFileObject);
+		}
+		else
+		{
+			UE_LOG(LogSaveGamePlugin, Warning, TEXT("Failed to deserialize json being written to the save file for level: %s"), *File.Key.ToString());
+			UE_LOG(LogSaveGamePlugin, Warning, TEXT("Deserialize error: %s"), *Reader->GetErrorMessage());
+			UE_LOG(LogSaveGamePlugin, Warning, TEXT("File: \n%s"), (const TCHAR*)File.Value.GetData());
 		}
 	}
 

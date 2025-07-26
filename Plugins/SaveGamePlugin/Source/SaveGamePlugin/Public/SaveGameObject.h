@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
+#include "Serialization/StructuredArchive.h"
 #include "SaveGameObject.generated.h"
 
 /**
@@ -29,7 +30,7 @@ public:
 		, EndPosition(0)
 	{}
 
-	FSaveGameArchive(class FStructuredArchive::FRecord& InRecord, UObject* InObject);
+	FSaveGameArchive(FStructuredArchiveRecord& InRecord, UObject* InObject);
 	~FSaveGameArchive();
 
 	bool IsValid() const
@@ -37,7 +38,7 @@ public:
 		return Record != nullptr;
 	}
 	
-	class FStructuredArchive::FRecord& GetRecord() const
+	FStructuredArchiveRecord& GetRecord() const
 	{
 		return *Record;
 	}
@@ -91,7 +92,7 @@ public:
 private:
 	FSaveGameArchive(FSaveGameArchive&) = delete;
 	
-	class FStructuredArchive::FRecord* Record;
+	FStructuredArchiveRecord* Record;
 	TWeakObjectPtr<> Object;
 	uint64 StartPosition;
 	uint64 EndPosition;

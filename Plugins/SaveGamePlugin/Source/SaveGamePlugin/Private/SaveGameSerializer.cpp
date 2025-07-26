@@ -175,6 +175,10 @@ FStructuredArchiveSlot TSaveGameSerializer<bIsLoading, bIsTextFormat>::EnterMapS
 
 	FoundMapSlot = true;
 
+	if (!bIsLoading)
+	{
+		FileManager->GetFileData(MapArchiver->MapFileName).Empty();
+	}
 	MapArchiver->Data = FileManager->GetFileData(MapArchiver->MapFileName);
 	return MapArchiver->RootSlot;
 }
@@ -263,6 +267,59 @@ static void LogSpawnActorError(const FString& ActorName, AActor* ConflictingActo
 }
 
 template<bool bIsLoading, bool bIsTextFormat>
+void TSaveGameSerializer<bIsLoading, bIsTextFormat>::SerializeActorComponents(FStructuredArchive::FSlot& ActorSlot, AActor* Actor)
+{
+	TSet<UActorComponent*> Components = Actor->GetComponents();
+	int32 NumComponents = Components.Num();
+
+	FStructuredArchiveSlot ComponentsSlot = ActorSlot.EnterAttribute(TEXT("Components"));
+	FStructuredArchive::FMap ComponentsMap = ComponentsSlot.EnterMap(NumComponents);
+	if (bIsLoading)
+	{
+		for (int32 i = 0; i < NumComponents; ++i)
+		{
+			FString ComponentName;
+			FStructuredArchive::FSlot ComponentSlot = ComponentsMap.EnterElement(ComponentName);
+
+			for (UActorComponent* Component : Components)
+			{
+				if (ComponentName == Component->GetName())
+				{
+					SerializeComponent(ComponentSlot, Component);
+					break;
+				}
+			}
+		}
+	}
+	else
+	{
+		for (UActorComponent* Component : Components)
+		{
+			FString ComponentName = Component->GetName();
+			FStructuredArchive::FSlot ComponentSlot = ComponentsMap.EnterElement(ComponentName);
+			SerializeComponent(ComponentSlot, Component);
+		}
+	}
+}
+
+template<bool bIsLoading, bool bIsTextFormat>
+void TSaveGameSerializer<bIsLoading, bIsTextFormat>::SerializeComponent(FStructuredArchive::FSlot& ComponentSlot, UActorComponent* Component)
+{
+	Component->SerializeScriptProperties(ComponentSlot.EnterAttribute(TEXT("Properties")));
+
+	FStructuredArchive::FSlot CustomDataSlot = ComponentSlot.EnterAttribute(TEXT("Data"));
+	FStructuredArchive::FRecord CustomDataRecord = CustomDataSlot.EnterRecord();
+
+	// Encapsulate the record in something a Blueprint can access 
+	FSaveGameArchive SaveGameArchive(CustomDataRecord, Component);
+
+	if (Component->GetClass()->ImplementsInterface(USaveGameObject::StaticClass()))
+	{
+		ISaveGameObject::Execute_OnSerialize(Component, SaveGameArchive, bIsLoading);
+	}
+}
+
+template<bool bIsLoading, bool bIsTextFormat>
 void TSaveGameSerializer<bIsLoading, bIsTextFormat>::SerializeActors(FStructuredArchive::FSlot& Slot)
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_SaveGame_SerializeActors);
@@ -328,7 +385,7 @@ void TSaveGameSerializer<bIsLoading, bIsTextFormat>::SerializeActors(FStructured
 					bool SpawnActor = true;
 					if (ActorClass->ImplementsInterface(USaveGameSpawnActor::StaticClass()))
 					{
-						SpawnActor = ISaveGameSpawnActor::Execute_SpawnIfNotExists(ActorClass->ClassDefaultObject);
+						SpawnActor = ISaveGameSpawnActor::Execute_SpawnIfNotExists(ActorClass->GetDefaultObject());
 					}
 
 					if (SpawnActor)
@@ -412,6 +469,8 @@ void TSaveGameSerializer<bIsLoading, bIsTextFormat>::SerializeActors(FStructured
 			// Do the actual serialization of the properties
 			SerializeActor(ActorMap, Actor, [&](const FString&, const FSoftClassPath&, const FGuid& SpawnID, FStructuredArchive::FSlot& ActorSlot)
 			{
+				SerializeActorComponents(ActorSlot, Actor);
+
 				Actor->SerializeScriptProperties(ActorSlot.EnterAttribute(TEXT("Properties")));
 
 				FStructuredArchive::FSlot CustomDataSlot = ActorSlot.EnterAttribute(TEXT("Data"));
@@ -435,7 +494,7 @@ void TSaveGameSerializer<bIsLoading, bIsTextFormat>::SerializeDestroyedActors(FS
 	const UWorld* World = SaveGameSubsystem->GetWorld();
 	FString SerializeMapName = GetMapName(World);
 	
-	int32 NumDestroyedActors;
+	int32 NumDestroyedActors = 0;
 
 	if (!bIsLoading)
 	{
@@ -467,6 +526,10 @@ void TSaveGameSerializer<bIsLoading, bIsTextFormat>::SerializeDestroyedActors(FS
 		}
 		
 		DestroyedActorsArray.EnterElement() << ActorName;
+		if (ActorName.IsNone())
+		{
+			continue;
+		}
 
 		if (bIsLoading)
 		{
@@ -581,10 +644,10 @@ void TSaveGameSerializer<bIsLoading, bIsTextFormat>::SerializeActor(FStructuredA
 // Instantiate the permutations of TSaveGameSerializer
 
 #if WITH_TEXT_ARCHIVE_SUPPORT
-template TSaveGameSerializer<false, true>;
+template class TSaveGameSerializer<false, true>;
 #endif
 
-template TSaveGameSerializer<false, false>;
-template TSaveGameSerializer<true, false>;
+template class TSaveGameSerializer<false, false>;
+template class TSaveGameSerializer<true, false>;
 
 UE_ENABLE_OPTIMIZATION
