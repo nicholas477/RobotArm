@@ -44,6 +44,7 @@ public:
 	URobotJointComponent(const FObjectInitializer& ObjectInitializer);
 
 	virtual void InitializeComponent() override;
+	virtual void BeginPlay() override;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Joint Component")
 	FRobotJoint Joint;
@@ -63,7 +64,7 @@ public:
 	UPROPERTY(Transient)
 	FTransform StartingRelativeTransform;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Joint Component", meta = (Units = "DegreesPerSecond"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Joint Component")
 	float RotationInterpSpeed;
 
 	UPROPERTY(Transient, BlueprintReadOnly, VisibleAnywhere, Category = "Joint Component")

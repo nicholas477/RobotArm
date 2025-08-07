@@ -91,8 +91,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Robot Utils|Chain", meta = (WorldContext = "WorldContextObject"))
 	static bool GetJointRotation(const FRobotJoint& Joint, const FRobotJointArray& JointArray, int32 Index, FRotator& OutRotator);
 
+	/**
+	* Makes a component chain walking backwards from ChainTip to ChainBase.
+	* ChainBase can be null, if it is then ChainTip is walked to parent components until it finds the base component.
+	* This function returns OutChain which can be used for solving inverse kinematics for the rotations/translations of the chain.
+	*/
 	UFUNCTION(BlueprintPure, Category = "Robot Utils|Chain")
-	static bool MakeChainFromComponents(const USceneComponent* ChainBase, USceneComponent* ChainTip, FRobotChain& OutChain, TArray<USceneComponent*>& OutJoints);
+	static bool MakeChainFromComponents(const USceneComponent* ChainBase, USceneComponent* ChainTip, FRobotChain& OutChain, TArray<USceneComponent*>& OutJoints, FRobotJointArray& OutRotations);
 
 	UFUNCTION(BlueprintCallable, Category = "Robot Utils|Chain", meta=(WorldContext = "WorldContextObject"))
 	static void DebugDrawChain(const UObject* WorldContextObject, const FTransform& ChainWorldTransform, const FRobotChain& Chain);
@@ -100,8 +105,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Robot Utils|Chain")
 	static bool SolveIK(const FSolveIKOptions& Options, const FRobotChain& Chain, const FTransform& DesiredEffectorTransform, FSolveIKResult& Result);
 
+	UFUNCTION(BlueprintCallable, Category = "Robot Utils|Chain")
+	static bool ApplyIK(const FSolveIKResult& IKResult, const FRobotChain& Chain, const TArray<USceneComponent*>& Joints);
+
 	UFUNCTION(BlueprintPure, Category = "Robot Utils|Chain")
 	static TArray<FRotator> GetJointRotations(const FRobotChain& Chain, const FRobotJointArray& JointArray);
+
+	UFUNCTION(BlueprintPure, Category = "Robot Utils|Chain")
+	static FRobotJointArray GetJointCurrentRotations(const TArray<USceneComponent*>& Joints);
 
 	UFUNCTION(BlueprintPure, Category = "Robot Utils|Chain")
 	static FVector GetJointTypeAxis(ERobotJointType JointType);

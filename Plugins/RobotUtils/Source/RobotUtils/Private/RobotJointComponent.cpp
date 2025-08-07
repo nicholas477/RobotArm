@@ -7,7 +7,7 @@
 #include "Materials/Material.h"
 #include "Materials/MaterialRenderProxy.h"
 
-// Sets default values for this component's properties
+UE_DISABLE_OPTIMIZATION
 URobotJointComponent::URobotJointComponent(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
@@ -34,9 +34,17 @@ void URobotJointComponent::InitializeComponent()
 	MovementInfo.Acceleration = FMath::DegreesToRadians(RotationInterpSpeed);
 }
 
+void URobotJointComponent::BeginPlay()
+{
+	Super::BeginPlay();
+
+	StartingRelativeTransform = GetRelativeTransform();
+}
+
 bool URobotJointComponent::MakeChain(USceneComponent* ChainTip, FRobotChain& OutChain, TArray<USceneComponent*>& OutJoints) const
 {
-	return URobotUtilsFunctionLibrary::MakeChainFromComponents(this, ChainTip, OutChain, OutJoints);
+	FRobotJointArray JointArray;
+	return URobotUtilsFunctionLibrary::MakeChainFromComponents(this, ChainTip, OutChain, OutJoints, JointArray);
 }
 
 bool URobotJointComponent::GetJointRotations(USceneComponent* ChainTip, FRobotJointArray& Rotations) const
@@ -90,7 +98,7 @@ bool URobotJointComponent::ApplyJointRotations(USceneComponent* ChainTip, const 
 			/*check(Accelerations.Q.Rotations.IsValidIndex(i));
 			check(Accelerations.QDot.Rotations.IsValidIndex(i));*/
 
-			JointJointComponent->SetTargetRotation(FMath::RadiansToDegrees(Rotations.Rotations[i]));
+			//JointJointComponent->SetTargetRotation(FMath::RadiansToDegrees(Rotations.Rotations[i]));
 			JointJointComponent->MovementInfo.TargetRotation = Rotations.Rotations[i];
 			i++;
 		}
@@ -130,7 +138,7 @@ bool URobotJointComponent::SolveIK(const FSolveIKOptions& Options, const FRobotC
 
 			if (URobotJointComponent* CastedJointComponent = Cast<URobotJointComponent>(JointComponent))
 			{
-				CastedJointComponent->SetTargetRotation(FMath::RadiansToDegrees(Result.JointArray.Rotations[i]));
+				//CastedJointComponent->SetTargetRotation(FMath::RadiansToDegrees(Result.JointArray.Rotations[i]));
 				CastedJointComponent->MovementInfo.TargetRotation = Result.JointArray.Rotations[i];
 				CastedJointComponent->MovementInfo.TargetVelocity = Result.VelocityJointArray.Rotations[i];
 			}
@@ -154,6 +162,11 @@ void URobotJointComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	if (Joint.Type == ERobotJointType::None || Joint.Type == ERobotJointType::Fixed)
+	{
+		return;
+	}
+
 	if (!IsWithinRotationThreshold())
 	{
 		const float RadianInterpSpeed = RotationInterpSpeed;// FMath::DegreesToRadians(RotationInterpSpeed);
@@ -170,11 +183,13 @@ void URobotJointComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 		const FVector Axis = URobotUtilsFunctionLibrary::GetJointTypeAxis(Joint.Type);
 		const FQuat NewJointRotation = FQuat(Axis, MovementInfo.CurrentRotation);
 
-		SetRelativeRotation(NewJointRotation);
+		SetRelativeRotation(StartingRelativeTransform.TransformRotation(NewJointRotation));
+		//SetRelativeRotation(NewJointRotation);
 		OnRobotJointRotate.Broadcast(this, DeltaTime, FMath::RadiansToDegrees(MovementInfo.CurrentRotation - OldRotation));
 	}
 	else
 	{
+		//GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Red, "Joint in rotation threshhold");
 		OnRobotJointRotate.Broadcast(this, DeltaTime, 0.f);
 	}
 }
@@ -411,3 +426,4 @@ FRobotJointMovementInfo FRobotJointMovementInfo::CalculateMovement(const FRobotJ
 
 	return OutMovementInfo;
 }
+UE_ENABLE_OPTIMIZATION

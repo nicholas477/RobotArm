@@ -46,12 +46,11 @@ void UEquipmentHolderComponent::OnRegister()
 
 	check(!HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject));
 
-	//EquipmentSlots.OwningObject = this;
-
 	// Call refresh equipment one frame after registration
 	AsyncTask(ENamedThreads::GameThread, [WeakThis = TWeakObjectPtr<ThisClass>(this)]() {
 		if (WeakThis.IsValid())
 		{
+			WeakThis->EquipmentSlots.OwningObject = WeakThis.Get();
 			WeakThis->RefreshEquipment();
 		}
 	});
@@ -477,10 +476,17 @@ AActor* UEquipmentHolderComponent::SpawnEquipmentClass(const FEquipmentSlot& Slo
 	return nullptr;
 }
 
+#if WITH_EDITOR
 void UEquipmentHolderComponent::PostEditChangeChainProperty(FPropertyChangedChainEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeChainProperty(PropertyChangedEvent);
 }
+
+void UEquipmentHolderComponent::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+}
+#endif
 
 void UEquipmentHolderComponent::PostEditImport()
 {

@@ -91,6 +91,9 @@ protected:
 	// Just spawns and attaches the actor of EquipmentClass to the slot, does not call OnEquip!
 	AActor* SpawnEquipmentClass(const FEquipmentSlot& Slot, TSubclassOf<AActor> EquipmentClass);
 
+#if WITH_EDITOR
 	virtual void PostEditChangeChainProperty(FPropertyChangedChainEvent& PropertyChangedEvent) override;
+	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
 	virtual void PostEditImport() override;
 };

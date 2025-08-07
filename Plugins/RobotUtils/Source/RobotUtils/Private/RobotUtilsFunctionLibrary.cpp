@@ -23,7 +23,7 @@ bool URobotUtilsFunctionLibrary::GetJointRotation(const FRobotJoint& Joint, cons
 	return true;
 }
 
-bool URobotUtilsFunctionLibrary::MakeChainFromComponents(const USceneComponent* ChainBase, USceneComponent* ChainTip, FRobotChain& OutChain, TArray<USceneComponent*>& OutJoints)
+bool URobotUtilsFunctionLibrary::MakeChainFromComponents(const USceneComponent* ChainBase, USceneComponent* ChainTip, FRobotChain& OutChain, TArray<USceneComponent*>& OutJoints, FRobotJointArray& OutRotations)
 {
 	if (ChainTip == nullptr)
 	{
@@ -31,8 +31,10 @@ bool URobotUtilsFunctionLibrary::MakeChainFromComponents(const USceneComponent* 
 		return false;
 	}
 
+	OutRotations.Rotations.Empty();
 	OutJoints.Empty();
 
+	if (ChainBase != nullptr)
 	{
 		USceneComponent* CurrentSegment = ChainTip;
 		while (CurrentSegment != nullptr && CurrentSegment != ChainBase)
@@ -47,6 +49,15 @@ bool URobotUtilsFunctionLibrary::MakeChainFromComponents(const USceneComponent* 
 			OutJoints.Push(CurrentSegment);
 		}
 	}
+	else
+	{
+		for (USceneComponent* CurrentSegment = ChainTip; CurrentSegment != nullptr;)
+		{
+			OutJoints.Push(CurrentSegment);
+
+			CurrentSegment = CurrentSegment->GetAttachParent();
+		}
+	}
 
 	if (OutJoints.Num() < 2)
 	{
@@ -59,26 +70,47 @@ bool URobotUtilsFunctionLibrary::MakeChainFromComponents(const USceneComponent* 
 
 	OutChain = FRobotChain();
 
-	// Walk the chain in reverse and turn it into a FRobotChain
+	// Walk the chain and turn it into a FRobotChain
 	for (int32 i = 0; i < OutJoints.Num() - 1; ++i)
 	{
 		USceneComponent* CurrentSegment = OutJoints[i];
 
 		FRobotSegment NewSegment;
 		NewSegment.Name = CurrentSegment->GetName();
+		NewSegment.Tip = OutJoints[i + 1]->GetRelativeTransform();
+
 		if (URobotJointComponent* JointComponent = Cast<URobotJointComponent>(CurrentSegment))
 		{
 			NewSegment.Joint = JointComponent->Joint;
+			if (NewSegment.Joint.Type != ERobotJointType::Fixed)
+			{
+				OutRotations.Rotations.Add(JointComponent->MovementInfo.CurrentRotation);
+			}
 		}
 		else
 		{
 			NewSegment.Joint.Name = "Joint: " + CurrentSegment->GetName();
 			NewSegment.Joint.Type = ERobotJointType::Fixed;
 		}
-		NewSegment.Tip = OutJoints[i + 1]->GetRelativeTransform();
 
 		OutChain.Segments.Add(NewSegment);
 	}
+
+#if !UE_BUILD_SHIPPING
+	int32 NumMovingSegments = 0;
+	for (const FRobotSegment& Segment : OutChain.Segments)
+	{
+		if (Segment.Joint.Type != ERobotJointType::Fixed)
+		{
+			NumMovingSegments++;
+		}
+	}
+
+	if (NumMovingSegments != OutRotations.Rotations.Num())
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Segments and rotations mismatch! Num segments: %d, Num Rotations: %d"), NumMovingSegments, OutRotations.Rotations.Num()));
+	}
+#endif
 
 	return true;
 }
@@ -95,7 +127,7 @@ void URobotUtilsFunctionLibrary::DebugDrawChain(const UObject* WorldContextObjec
 
 			const FTransform SegmentBaseTransform = KDLFrameToTransform(Segment.getFrameToTip()) * CurrentTransform;
 
-			const FString SegmentName = UTF8_TO_TCHAR(Segment.getName().c_str());
+			const FString SegmentName = FString::Printf(TEXT("%d: %s"), i, UTF8_TO_TCHAR(Segment.getName().c_str()));
 
 			DrawDebugString(World, CurrentTransform.GetLocation(), SegmentName, nullptr, FColor::Green, -1.f, false, 1.f);
 			DrawDebugLine(World, CurrentTransform.GetLocation(), SegmentBaseTransform.GetLocation(), FColor::Red, false, -1, SDPG_Foreground);
@@ -181,6 +213,42 @@ bool URobotUtilsFunctionLibrary::SolveIK(const FSolveIKOptions& Options, const F
 	return false;
 }
 
+bool URobotUtilsFunctionLibrary::ApplyIK(const FSolveIKResult& IKResult, const FRobotChain& Chain, const TArray<USceneComponent*>& Joints)
+{
+	TArray<USceneComponent*> JointsCpy = Joints;
+	JointsCpy.RemoveAll([](USceneComponent* Component)
+	{
+		URobotJointComponent* JointComponent = Cast<URobotJointComponent>(Component);
+		if (JointComponent)
+		{
+			return JointComponent->Joint.Type == ERobotJointType::Fixed;
+		}
+		else
+		{
+			return true;
+		}
+	});
+
+	//const TArray<FRotator> JointRotations = URobotUtilsFunctionLibrary::GetJointRotations(Chain, IKResult.JointArray);
+	check(JointsCpy.Num() == IKResult.JointArray.Rotations.Num());
+
+	for (int32 i = 0; i < IKResult.JointArray.Rotations.Num(); ++i)
+	{
+		USceneComponent* JointComponent = JointsCpy[i];
+
+		URobotJointComponent* CastedJointComponent = Cast<URobotJointComponent>(JointComponent);
+		ensure(CastedJointComponent != nullptr);
+		if (CastedJointComponent)
+		{
+			//CastedJointComponent->SetTargetRotation(FMath::RadiansToDegrees(IKResult.JointArray.Rotations[i]));
+			CastedJointComponent->MovementInfo.TargetRotation = IKResult.JointArray.Rotations[i];
+			CastedJointComponent->MovementInfo.TargetVelocity = IKResult.VelocityJointArray.Rotations[i];
+		}
+	}
+
+	return true;
+}
+
 TArray<FRotator> URobotUtilsFunctionLibrary::GetJointRotations(const FRobotChain& Chain, const FRobotJointArray& JointArray)
 {
 	SCOPED_NAMED_EVENT(URobotUtilsFunctionLibrary_GetJointRotations, FColor::Green);
@@ -200,6 +268,24 @@ TArray<FRotator> URobotUtilsFunctionLibrary::GetJointRotations(const FRobotChain
 		Rotations.Add(JointRot);
 	}
 	return Rotations;
+}
+
+FRobotJointArray URobotUtilsFunctionLibrary::GetJointCurrentRotations(const TArray<USceneComponent*>& Joints)
+{
+	FRobotJointArray OutArray;
+	for (const USceneComponent* JointComponent : Joints)
+	{
+		if (const URobotJointComponent* JointJointComponent = Cast<const URobotJointComponent>(JointComponent))
+		{
+			if (JointJointComponent->Joint.Type == ERobotJointType::Fixed)
+			{
+				continue;
+			}
+
+			OutArray.Rotations.Add(JointJointComponent->MovementInfo.CurrentRotation);
+		}
+	}
+	return OutArray;
 }
 
 FVector URobotUtilsFunctionLibrary::GetJointTypeAxis(ERobotJointType JointType)
