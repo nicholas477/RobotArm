@@ -18,7 +18,8 @@ public class RobotArm : ModuleRules
 			"Mover",
 			"RHI",
 			"RenderCore",
-			"UMG"
+			"UMG",
+			"GameplayTags"
         });
 	}
 }
