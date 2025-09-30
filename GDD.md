@@ -10,3 +10,8 @@ https://www.youtube.com/watch?v=TKT_CmsQKG4
 https://www.youtube.com/watch?v=DFMRwK0YkPs
 
 ### Basic overview
+
+
+### Limits/restraints
+Electricity costs money
+How much electricity the robots use is based on how fast they move

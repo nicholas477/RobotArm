@@ -28,6 +28,10 @@ public:
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Buildable")
 	TSoftClassPtr<AActor> PreviewClass;
 
+	// Class for the buildable preview component
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Buildable")
+	TSoftClassPtr<class UBuildableComponent> PreviewComponentClass;
+
 	// UI thumbnail
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Buildable")
 	TSoftObjectPtr<UTexture2D> Image;
